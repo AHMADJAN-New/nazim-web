@@ -6,6 +6,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import { ExamTimetableBoard } from '@/components/exams/ExamTimetableBoard';
+import { ExamTimeSlotDialog } from '@/components/exams/ExamTimeSlotDialog';
 import {
   ExamTimetableGeneratePanel,
   type ExamTimetableGenerateConfig,
@@ -28,6 +29,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { 
   useExam, useExamClasses, useExamSubjects, useExamTimes,
   useCreateExamTime, useUpdateExamTime, useDeleteExamTime, useToggleExamTimeLock,
+  useReorderExamTimes,
   useBulkReplaceExamTimes,
   useExams, useLatestExamFromCurrentYear
 } from '@/hooks/useExams';
@@ -35,23 +37,15 @@ import { useRooms } from '@/hooks/useRooms';
 import { useStaff } from '@/hooks/useStaff';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useLanguage } from '@/hooks/useLanguage';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { showToast } from '@/lib/toast';
 import { dateToLocalYYYYMMDD, parseLocalDate } from '@/lib/dateUtils';
+import { slotKey, sortClassesByMode, type ClassSortMode } from '@/lib/examScheduleSlots';
+import type { ExamTimeSlotFormValues } from '@/lib/validations/examTime';
 import {
   buildExamDays,
   solveExamTimetable,
@@ -110,6 +104,7 @@ export function ExamTimetablePage() {
   const createExamTime = useCreateExamTime();
   const updateExamTime = useUpdateExamTime();
   const deleteExamTime = useDeleteExamTime();
+  const reorderExamTimes = useReorderExamTimes();
   const toggleLock = useToggleExamTimeLock();
   const bulkReplaceExamTimes = useBulkReplaceExamTimes();
 
@@ -118,9 +113,10 @@ export function ExamTimetablePage() {
 
   // State
   const [selectedClassFilter, setSelectedClassFilter] = useState<string>('all');
+  const [classSortMode, setClassSortMode] = useState<ClassSortMode>('viewing');
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>('');
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSlotDialogOpen, setIsSlotDialogOpen] = useState(false);
+  const [slotDialogMode, setSlotDialogMode] = useState<'create' | 'edit'>('create');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isRegenerateConfirmOpen, setIsRegenerateConfirmOpen] = useState(false);
   const [pendingGenerateConfig, setPendingGenerateConfig] = useState<ExamTimetableGenerateConfig | null>(null);
@@ -130,22 +126,6 @@ export function ExamTimetablePage() {
   const [boardDirty, setBoardDirty] = useState(false);
   const [timeToEdit, setTimeToEdit] = useState<ExamTime | null>(null);
   const [timeToDelete, setTimeToDelete] = useState<ExamTime | null>(null);
-  const [formData, setFormData] = useState({
-    examClassId: '',
-    examSubjectId: '',
-    date: '',
-    startTime: '',
-    endTime: '',
-    roomId: '',
-    invigilatorId: '',
-    notes: '',
-  });
-
-  // Get subjects for selected class in form
-  const subjectsForSelectedClass = useMemo(() => {
-    if (!formData.examClassId || !examSubjects) return [];
-    return examSubjects.filter(es => es.examClassId === formData.examClassId);
-  }, [formData.examClassId, examSubjects]);
 
   const toDateKey = (value: Date | string) => {
     if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
@@ -171,6 +151,27 @@ export function ExamTimetablePage() {
     };
   }, [exam?.startDate, exam?.endDate]);
 
+  const sortedExamClasses = useMemo(() => {
+    const items = (examClasses ?? []).map((ec) => {
+      const className = ec.classAcademicYear?.class?.name || 'Class';
+      const name = ec.classAcademicYear?.sectionName
+        ? `${className} - ${ec.classAcademicYear.sectionName}`
+        : className;
+      return {
+        id: ec.id,
+        classAcademicYearId: ec.classAcademicYearId,
+        name,
+        gradeLevel: ec.classAcademicYear?.class?.gradeLevel ?? null,
+      };
+    });
+    return sortClassesByMode(items, classSortMode);
+  }, [examClasses, classSortMode]);
+
+  const classRank = useMemo(
+    () => new Map(sortedExamClasses.map((item, index) => [item.id, index])),
+    [sortedExamClasses],
+  );
+
   // Filter exam times
   const filteredExamTimes = useMemo(() => {
     if (!examTimes) return [];
@@ -179,12 +180,15 @@ export function ExamTimetablePage() {
       const matchesDate = !selectedDateFilter || toDateKey(et.date) === selectedDateFilter;
       return matchesClass && matchesDate;
     }).sort((a, b) => {
-      // Sort by date, then by start time
       const dateCompare = toDateKey(a.date).localeCompare(toDateKey(b.date));
       if (dateCompare !== 0) return dateCompare;
-      return a.startTime.localeCompare(b.startTime);
+      const rank = (classRank.get(a.examClassId) ?? 0) - (classRank.get(b.examClassId) ?? 0);
+      if (rank !== 0) return rank;
+      const timeCompare = a.startTime.localeCompare(b.startTime);
+      if (timeCompare !== 0) return timeCompare;
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
     });
-  }, [examTimes, selectedClassFilter, selectedDateFilter]);
+  }, [examTimes, selectedClassFilter, selectedDateFilter, classRank]);
 
   // Group exam times by date
   const groupedByDate = useMemo(() => {
@@ -253,14 +257,8 @@ export function ExamTimetablePage() {
   const examEndKey = exam?.endDate ? toDateKey(exam.endDate) : '';
 
   const boardClasses = useMemo(
-    () =>
-      (examClasses ?? []).map((ec) => ({
-        id: ec.id,
-        name: getClassName(ec.id),
-      })),
-    // getClassName depends on examClasses
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [examClasses]
+    () => sortedExamClasses.map((item) => ({ id: item.id, name: item.name })),
+    [sortedExamClasses],
   );
 
   // Reset draft when switching exams
@@ -293,6 +291,7 @@ export function ExamTimetablePage() {
         date: toDateKey(et.date),
         startTime: et.startTime.slice(0, 5),
         endTime: et.endTime.slice(0, 5),
+        sortOrder: et.sortOrder ?? 0,
         roomId: et.roomId ?? null,
         invigilatorId: et.invigilatorId ?? null,
         isLocked: et.isLocked,
@@ -403,92 +402,138 @@ export function ExamTimetablePage() {
     showToast.info('toast.examTimetableDiscarded');
   };
 
-  const resetForm = () => {
-    setFormData({
+  const slotSubjects = useMemo(() => {
+    if (!timeToEdit || !examTimes) return [];
+    const key = slotKey({
+      examClassId: timeToEdit.examClassId,
+      date: toDateKey(timeToEdit.date),
+      startTime: timeToEdit.startTime,
+      endTime: timeToEdit.endTime,
+    });
+    return examTimes
+      .filter((item) => slotKey({
+        examClassId: item.examClassId,
+        date: toDateKey(item.date),
+        startTime: item.startTime,
+        endTime: item.endTime,
+      }) === key)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((item) => ({
+        id: item.id,
+        classSubjectId: examSubjects?.find((subject) => subject.id === item.examSubjectId)?.classSubjectId || '',
+        name: getSubjectName(item.examSubjectId),
+        locked: item.isLocked,
+      }));
+  }, [timeToEdit, examTimes, examSubjects]);
+
+  const slotInitialValues = useMemo<ExamTimeSlotFormValues>(() => {
+    if (slotDialogMode === 'edit' && timeToEdit) {
+      return {
+        examClassId: timeToEdit.examClassId,
+        classSubjectId: examSubjects?.find((subject) => subject.id === timeToEdit.examSubjectId)?.classSubjectId || '',
+        date: toDateKey(timeToEdit.date),
+        startTime: timeToEdit.startTime.slice(0, 5),
+        endTime: timeToEdit.endTime.slice(0, 5),
+        roomId: timeToEdit.roomId || '',
+        invigilatorId: timeToEdit.invigilatorId || '',
+        notes: timeToEdit.notes || '',
+      };
+    }
+    return {
       examClassId: '',
-      examSubjectId: '',
+      classSubjectId: '',
       date: '',
       startTime: '',
       endTime: '',
-      roomId: 'none',
-      invigilatorId: 'none',
+      roomId: '',
+      invigilatorId: '',
       notes: '',
-    });
-  };
+    };
+  }, [slotDialogMode, timeToEdit, examSubjects]);
 
-  const handleCreate = () => {
-    if (!examId || !formData.examClassId || !formData.examSubjectId || !formData.date || !formData.startTime || !formData.endTime) {
-      showToast.error(t('events.required') || 'Please fill in all required fields');
+  const handleSlotSubmit = (values: ExamTimeSlotFormValues) => {
+    if (!examId) return;
+    const payload = {
+      examClassId: values.examClassId,
+      classSubjectId: values.classSubjectId,
+      date: parseLocalDate(values.date),
+      startTime: values.startTime,
+      endTime: values.endTime,
+      roomId: values.roomId || null,
+      invigilatorId: values.invigilatorId || null,
+      notes: values.notes || null,
+    };
+
+    if (slotDialogMode === 'create') {
+      createExamTime.mutate(
+        { examId, data: payload },
+        { onSuccess: () => setIsSlotDialogOpen(false) },
+      );
       return;
     }
 
-    if (formData.startTime >= formData.endTime) {
-      showToast.error(t('exams.invalidTimeRange') || 'End time must be after start time');
-      return;
-    }
-
-    createExamTime.mutate(
-      {
-        examId,
-        data: {
-          examClassId: formData.examClassId,
-          examSubjectId: formData.examSubjectId,
-          date: parseLocalDate(formData.date),
-          startTime: formData.startTime,
-          endTime: formData.endTime,
-          roomId: formData.roomId && formData.roomId !== 'none' ? formData.roomId : null,
-          invigilatorId: formData.invigilatorId && formData.invigilatorId !== 'none' ? formData.invigilatorId : null,
-          notes: formData.notes || null,
-        },
-      },
-      {
-        onSuccess: () => {
-          showToast.success(t('toast.examTimeCreated') || 'Time slot created');
-          setIsCreateDialogOpen(false);
-          resetForm();
-        },
-        onError: (error: Error) => {
-          showToast.error(error.message || t('toast.examTimeCreateFailed') || 'Failed to create time slot');
-        },
-      }
-    );
-  };
-
-  const handleUpdate = () => {
-    if (!timeToEdit || !formData.date || !formData.startTime || !formData.endTime) {
-      showToast.error(t('events.required') || 'Please fill in all required fields');
-      return;
-    }
-
-    if (formData.startTime >= formData.endTime) {
-      showToast.error(t('exams.invalidTimeRange') || 'End time must be after start time');
-      return;
-    }
-
+    if (!timeToEdit) return;
     updateExamTime.mutate(
       {
         id: timeToEdit.id,
         data: {
-          date: parseLocalDate(formData.date),
-          startTime: formData.startTime,
-          endTime: formData.endTime,
-          roomId: formData.roomId && formData.roomId !== 'none' ? formData.roomId : null,
-          invigilatorId: formData.invigilatorId && formData.invigilatorId !== 'none' ? formData.invigilatorId : null,
-          notes: formData.notes || null,
+          ...payload,
+          syncSlot: values.examClassId === timeToEdit.examClassId,
         },
       },
-      {
-        onSuccess: () => {
-          showToast.success(t('toast.examTimeUpdated') || 'Time slot updated');
-          setIsEditDialogOpen(false);
-          setTimeToEdit(null);
-          resetForm();
-        },
-        onError: (error: Error) => {
-          showToast.error(error.message || t('toast.examTimeUpdateFailed') || 'Failed to update time slot');
-        },
-      }
+      { onSuccess: () => setIsSlotDialogOpen(false) },
     );
+  };
+
+  const handleAddClassSubject = (classSubjectId: string) => {
+    if (!examId || !timeToEdit) return;
+    createExamTime.mutate({
+      examId,
+      data: {
+        examClassId: timeToEdit.examClassId,
+        classSubjectId,
+        date: timeToEdit.date,
+        startTime: timeToEdit.startTime,
+        endTime: timeToEdit.endTime,
+        roomId: timeToEdit.roomId ?? null,
+        invigilatorId: timeToEdit.invigilatorId ?? null,
+        notes: timeToEdit.notes ?? null,
+        sortOrder: slotSubjects.length,
+      },
+    });
+  };
+
+  const handleReorderSlot = (orderedIds: string[]) => {
+    if (!examId) return;
+    reorderExamTimes.mutate({ examId, examTimeIds: orderedIds });
+  };
+
+  const handleRemoveSlotSubject = (examTimeId: string) => {
+    deleteExamTime.mutate(examTimeId, {
+      onSuccess: () => {
+        if (timeToEdit?.id !== examTimeId) return;
+        const next = slotSubjects.find((row) => row.id !== examTimeId);
+        const nextTime = next ? examTimes?.find((item) => item.id === next.id) : undefined;
+        if (!nextTime) {
+          setIsSlotDialogOpen(false);
+          setTimeToEdit(null);
+          return;
+        }
+        setTimeToEdit(nextTime);
+      },
+    });
+  };
+
+  const openEditDialog = (examTime: ExamTime) => {
+    setTimeToEdit(examTime);
+    setSlotDialogMode('edit');
+    setIsSlotDialogOpen(true);
+  };
+
+  const openCreateDialog = () => {
+    setTimeToEdit(null);
+    setSlotDialogMode('create');
+    setIsSlotDialogOpen(true);
   };
 
   const handleDelete = () => {
@@ -519,26 +564,6 @@ export function ExamTimetablePage() {
         showToast.error(error.message || t('toast.examTimeLockToggleFailed') || 'Failed to toggle lock');
       },
     });
-  };
-
-  const openEditDialog = (examTime: ExamTime) => {
-    setTimeToEdit(examTime);
-    setFormData({
-      examClassId: examTime.examClassId,
-      examSubjectId: examTime.examSubjectId,
-      date: toDateKey(examTime.date),
-      startTime: examTime.startTime,
-      endTime: examTime.endTime,
-      roomId: examTime.roomId || 'none',
-      invigilatorId: examTime.invigilatorId || 'none',
-      notes: examTime.notes || '',
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const openCreateDialog = () => {
-    resetForm();
-    setIsCreateDialogOpen(true);
   };
 
   const isLoading = (examIdFromParams ? examLoading : examsLoading) || timesLoading;
@@ -736,17 +761,27 @@ export function ExamTimetablePage() {
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
-              <Select value={selectedClassFilter} onValueChange={setSelectedClassFilter} className="w-full sm:w-[200px]">
-                <SelectTrigger>
+              <Select value={selectedClassFilter} onValueChange={setSelectedClassFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]">
                   <SelectValue placeholder={t('exams.filterByClass') || 'Filter by class'} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('subjects.all') || 'All Classes'}</SelectItem>
-                  {examClasses?.map((ec) => (
-                    <SelectItem key={ec.id} value={ec.id}>
-                      {getClassName(ec.id)}
+                  {sortedExamClasses.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+              <Select value={classSortMode} onValueChange={(value) => setClassSortMode(value as ClassSortMode)}>
+                <SelectTrigger className="w-full sm:w-[180px]" aria-label={t('exams.classSort')}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="asc">{t('exams.classSortAsc')}</SelectItem>
+                  <SelectItem value="desc">{t('exams.classSortDesc')}</SelectItem>
+                  <SelectItem value="viewing">{t('exams.classSortViewing')}</SelectItem>
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-2 flex-1">
@@ -790,7 +825,7 @@ export function ExamTimetablePage() {
                 />
               )}
               {canModify && (
-                <Button onClick={openCreateDialog} disabled={!examClasses?.length || !examSubjects?.length} className="w-full sm:w-auto flex-shrink-0">
+                <Button onClick={openCreateDialog} disabled={!examClasses?.length} className="w-full sm:w-auto flex-shrink-0">
                   <Plus className="h-4 w-4" />
                   <span className="ml-2">{t('exams.addTimeSlot') || 'Add Time Slot'}</span>
                 </Button>
@@ -939,297 +974,32 @@ export function ExamTimetablePage() {
         </CardContent>
       </Card>
 
-      {/* Create Dialog */}
-      <Dialog
-        open={isCreateDialogOpen}
+      <ExamTimeSlotDialog
+        open={isSlotDialogOpen}
+        mode={slotDialogMode}
+        openKey={timeToEdit?.id ?? 'create'}
+        classes={sortedExamClasses}
+        rooms={(rooms ?? []).map((room) => ({ id: room.id, name: room.roomNumber }))}
+        staff={(staff ?? []).map((person) => ({
+          id: person.id,
+          name: person.fullName || `${person.firstName} ${person.lastName}`.trim(),
+        }))}
+        minDate={examDateBounds.minDate}
+        maxDate={examDateBounds.maxDate}
+        initial={slotInitialValues}
+        slotSubjects={slotDialogMode === 'edit' ? slotSubjects : []}
+        savedClassId={timeToEdit?.examClassId}
+        canArrangeSubjects={canModify && slotDialogMode === 'edit'}
+        pending={createExamTime.isPending || updateExamTime.isPending || reorderExamTimes.isPending || deleteExamTime.isPending}
         onOpenChange={(open) => {
-          setIsCreateDialogOpen(open);
-          if (!open) resetForm();
+          setIsSlotDialogOpen(open);
+          if (!open) setTimeToEdit(null);
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('exams.addTimeSlot') || 'Add Time Slot'}</DialogTitle>
-            <DialogDescription>
-              {t('exams.addTimeSlotDescription') || 'Schedule a new exam session'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="create-exam-class">{t('search.class') || 'Class'} *</Label>
-                <Select
-                  value={formData.examClassId}
-                  onValueChange={(v) =>
-                    setFormData((prev) => ({ ...prev, examClassId: v, examSubjectId: '' }))
-                  }
-                >
-                  <SelectTrigger id="create-exam-class">
-                    <SelectValue placeholder={t('events.selectClass') || 'Select class'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {examClasses?.map((ec) => (
-                      <SelectItem key={ec.id} value={ec.id}>
-                        {getClassName(ec.id)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="create-exam-subject">{t('exams.subject') || 'Subject'} *</Label>
-                <Select
-                  value={formData.examSubjectId}
-                  onValueChange={(v) => setFormData((prev) => ({ ...prev, examSubjectId: v }))}
-                  disabled={!formData.examClassId}
-                >
-                  <SelectTrigger id="create-exam-subject">
-                    <SelectValue placeholder={t('exams.selectSubject') || 'Select subject'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjectsForSelectedClass.map((es) => (
-                      <SelectItem key={es.id} value={es.id}>
-                        {es.subject?.name || 'Subject'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="create-exam-date">{t('events.date') || 'Date'} *</Label>
-              <CalendarDatePicker
-                date={formData.date ? parseLocalDate(formData.date) : undefined}
-                onDateChange={(date) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    date: date ? dateToLocalYYYYMMDD(date) : '',
-                  }))
-                }
-                minDate={examDateBounds.minDate}
-                maxDate={examDateBounds.maxDate}
-                placeholder={t('common.selectDate') || 'Select date'}
-                className="w-full"
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="create-start-time">{t('exams.startTime') || 'Start Time'} *</Label>
-                <Input
-                  id="create-start-time"
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, startTime: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="create-end-time">{t('exams.endTime') || 'End Time'} *</Label>
-                <Input
-                  id="create-end-time"
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, endTime: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="create-room">{t('exams.room') || 'Room'}</Label>
-                <Select
-                  value={formData.roomId || 'none'}
-                  onValueChange={(v) => setFormData((prev) => ({ ...prev, roomId: v }))}
-                >
-                  <SelectTrigger id="create-room">
-                    <SelectValue placeholder={t('exams.selectRoom') || 'Select room'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
-                    {rooms?.map((room) => (
-                      <SelectItem key={room.id} value={room.id}>
-                        {room.roomNumber}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="create-invigilator">{t('exams.invigilator') || 'Invigilator'}</Label>
-                <Select
-                  value={formData.invigilatorId || 'none'}
-                  onValueChange={(v) => setFormData((prev) => ({ ...prev, invigilatorId: v }))}
-                >
-                  <SelectTrigger id="create-invigilator">
-                    <SelectValue placeholder={t('exams.selectInvigilator') || 'Select invigilator'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
-                    {staff?.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.fullName || `${s.firstName} ${s.lastName}`.trim()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="create-notes">{t('events.notes') || 'Notes'}</Label>
-              <Textarea
-                id="create-notes"
-                value={formData.notes}
-                onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
-                placeholder={t('exams.notesPlaceholder') || 'Optional notes...'}
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsCreateDialogOpen(false);
-                resetForm();
-              }}
-            >
-              {t('events.cancel') || 'Cancel'}
-            </Button>
-            <Button onClick={handleCreate} disabled={createExamTime.isPending}>
-              {t('events.create') || 'Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog
-        open={isEditDialogOpen}
-        onOpenChange={(open) => {
-          setIsEditDialogOpen(open);
-          if (!open) {
-            setTimeToEdit(null);
-            resetForm();
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('exams.editTimeSlot') || 'Edit Time Slot'}</DialogTitle>
-            <DialogDescription>
-              {t('exams.editTimeSlotDescription') || 'Update exam session details'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {timeToEdit && (
-              <div className="rounded-lg border bg-muted/50 p-3">
-                <p className="font-medium">
-                  {getClassName(timeToEdit.examClassId)} - {getSubjectName(timeToEdit.examSubjectId)}
-                </p>
-              </div>
-            )}
-            <div>
-              <Label htmlFor="edit-exam-date">{t('events.date') || 'Date'} *</Label>
-              <CalendarDatePicker
-                date={formData.date ? parseLocalDate(formData.date) : undefined}
-                onDateChange={(date) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    date: date ? dateToLocalYYYYMMDD(date) : '',
-                  }))
-                }
-                minDate={examDateBounds.minDate}
-                maxDate={examDateBounds.maxDate}
-                placeholder={t('common.selectDate') || 'Select date'}
-                className="w-full"
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-start-time">{t('exams.startTime') || 'Start Time'} *</Label>
-                <Input
-                  id="edit-start-time"
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, startTime: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-end-time">{t('exams.endTime') || 'End Time'} *</Label>
-                <Input
-                  id="edit-end-time"
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, endTime: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-room">{t('exams.room') || 'Room'}</Label>
-                <Select
-                  value={formData.roomId || 'none'}
-                  onValueChange={(v) => setFormData((prev) => ({ ...prev, roomId: v }))}
-                >
-                  <SelectTrigger id="edit-room">
-                    <SelectValue placeholder={t('exams.selectRoom') || 'Select room'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
-                    {rooms?.map((room) => (
-                      <SelectItem key={room.id} value={room.id}>
-                        {room.roomNumber}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="edit-invigilator">{t('exams.invigilator') || 'Invigilator'}</Label>
-                <Select
-                  value={formData.invigilatorId || 'none'}
-                  onValueChange={(v) => setFormData((prev) => ({ ...prev, invigilatorId: v }))}
-                >
-                  <SelectTrigger id="edit-invigilator">
-                    <SelectValue placeholder={t('exams.selectInvigilator') || 'Select invigilator'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t('events.none') || 'None'}</SelectItem>
-                    {staff?.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.fullName || `${s.firstName} ${s.lastName}`.trim()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="edit-notes">{t('events.notes') || 'Notes'}</Label>
-              <Textarea
-                id="edit-notes"
-                value={formData.notes}
-                onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
-                placeholder={t('exams.notesPlaceholder') || 'Optional notes...'}
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsEditDialogOpen(false);
-                setTimeToEdit(null);
-                resetForm();
-              }}
-            >
-              {t('events.cancel') || 'Cancel'}
-            </Button>
-            <Button onClick={handleUpdate} disabled={updateExamTime.isPending}>
-              {t('events.update') || 'Update'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onSubmit={handleSlotSubmit}
+        onReorder={handleReorderSlot}
+        onAddClassSubject={handleAddClassSubject}
+        onRemoveSlotSubject={handleRemoveSlotSubject}
+      />
 
       {/* Delete Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

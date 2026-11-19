@@ -4,6 +4,7 @@ namespace App\Services\Imports;
 
 use App\Models\ClassAcademicYear;
 use App\Models\Room;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -224,7 +225,7 @@ class SubjectImportService
                 } elseif (mb_strlen($code) > 50) {
                     $rowErrors[] = ['row' => $rowNumber, 'field' => 'code', 'message' => 'code must be at most 50 characters'];
                 } else {
-                    $codeKey = mb_strtolower($code);
+                    $codeKey = $this->subjectCodeKey($code);
                     if (isset($codesInSheet[$codeKey])) {
                         $rowErrors[] = ['row' => $rowNumber, 'field' => 'code', 'message' => 'Duplicate code in the same sheet'];
                     }
@@ -363,7 +364,10 @@ class SubjectImportService
                 ->whereNull('deleted_at')
                 ->get(['id', 'code']);
             foreach ($existingSubjects as $subject) {
-                $codeKey = mb_strtolower((string) $subject->code);
+                $codeKey = $this->subjectCodeKey((string) $subject->code);
+                if ($codeKey === '') {
+                    continue;
+                }
                 $subjectIdByCode[$codeKey] = (string) $subject->id;
                 $preExistingCodes[$codeKey] = true;
             }
@@ -390,9 +394,10 @@ class SubjectImportService
 
                     $name = trim((string) ($row['name'] ?? ''));
                     $code = trim((string) ($row['code'] ?? ''));
-                    $codeKey = mb_strtolower($code);
+                    $codeKey = $this->subjectCodeKey($code);
 
                     if (isset($subjectIdByCode[$codeKey])) {
+                        // Reuse the existing subject. Do not update its name or other fields.
                         $subjectId = $subjectIdByCode[$codeKey];
                         if (isset($preExistingCodes[$codeKey]) && ! isset($countedSkippedCodes[$codeKey])) {
                             $skippedSubjects++;
@@ -401,19 +406,40 @@ class SubjectImportService
                     } else {
                         $subjectId = (string) Str::uuid();
                         $isActive = $this->parseBoolean($row['is_active'] ?? null);
-                        DB::table('subjects')->insert([
-                            'id' => $subjectId,
-                            'organization_id' => $organizationId,
-                            'school_id' => $schoolId,
-                            'name' => $name,
-                            'code' => $code,
-                            'description' => $this->nullableString($row['description'] ?? null),
-                            'is_active' => $isActive ?? true,
-                            'created_at' => $now,
-                            'updated_at' => $now,
-                        ]);
-                        $subjectIdByCode[$codeKey] = $subjectId;
-                        $createdSubjects++;
+                        try {
+                            DB::table('subjects')->insert([
+                                'id' => $subjectId,
+                                'organization_id' => $organizationId,
+                                'school_id' => $schoolId,
+                                'name' => $name,
+                                'code' => $codeKey,
+                                'description' => $this->nullableString($row['description'] ?? null),
+                                'is_active' => $isActive ?? true,
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ]);
+                            $subjectIdByCode[$codeKey] = $subjectId;
+                            $createdSubjects++;
+                        } catch (QueryException $e) {
+                            $existingId = DB::table('subjects')
+                                ->where('organization_id', $organizationId)
+                                ->where('school_id', $schoolId)
+                                ->whereNull('deleted_at')
+                                ->whereRaw('upper(trim(code)) = ?', [$codeKey])
+                                ->value('id');
+
+                            if (! $existingId) {
+                                throw $e;
+                            }
+
+                            $subjectId = (string) $existingId;
+                            $subjectIdByCode[$codeKey] = $subjectId;
+                            $preExistingCodes[$codeKey] = true;
+                            if (! isset($countedSkippedCodes[$codeKey])) {
+                                $skippedSubjects++;
+                                $countedSkippedCodes[$codeKey] = true;
+                            }
+                        }
                     }
 
                     $isRequired = $this->parseBoolean($row['is_required'] ?? null);
@@ -466,6 +492,7 @@ class SubjectImportService
 
                     if ($existingClassSubject) {
                         $skippedClassSubjects++;
+
                         continue;
                     }
 
@@ -517,6 +544,15 @@ class SubjectImportService
         }
 
         return [];
+    }
+
+    /**
+     * Canonical subject code for duplicate checks within one organization and school.
+     * Trimmed and uppercased so " qur-01 " matches "QUR-01" and is not imported again.
+     */
+    private function subjectCodeKey(string $code): string
+    {
+        return mb_strtoupper(trim($code));
     }
 
     private function normalizeCellValue(mixed $raw): mixed

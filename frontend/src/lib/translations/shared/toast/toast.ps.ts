@@ -110,7 +110,13 @@ export default {
       sessionClosed: "د حاضرۍ غونډه په بریالیتوب سره بنده شوه",
       sessionCreated: "د حاضرۍ غونډه په بریالیتوب سره جوړه شوه",
       sessionDeleted: "د حاضرۍ غونډه په بریالیتوب سره ړنګه شوه",
-      sessionUpdated: "د حاضرۍ غونډه په بریالیتوب سره تازه شوه"
+      sessionUpdated: "د حاضرۍ غونډه په بریالیتوب سره تازه شوه",
+      groupCreated: "د حاضرۍ ډله جوړه شوه",
+      groupUpdated: "د حاضرۍ ډله تازه شوه",
+      groupDeleted: "د حاضرۍ ډله ړنګه شوه",
+      groupCreateFailed: "د حاضرۍ ډلې جوړول ناکام شول",
+      groupUpdateFailed: "د حاضرۍ ډلې تازه کول ناکام شول",
+      groupDeleteFailed: "د حاضرۍ ډلې ړنګول ناکام شول"
     },
     courseClosed: "کورس بند شو",
     courseDeleted: "کورس ړنګ شو",

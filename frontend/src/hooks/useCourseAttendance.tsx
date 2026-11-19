@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from './useAuth';
 
-import { courseAttendanceSessionsApi } from '@/lib/api/client';
+import { courseAttendanceGroupsApi, courseAttendanceSessionsApi } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 
 export interface CourseAttendanceSession {
@@ -10,6 +10,7 @@ export interface CourseAttendanceSession {
   organization_id: string;
   school_id: string;
   course_id: string;
+  attendance_group_id: string | null;
   session_date: string;
   session_title: string | null;
   method: 'manual' | 'barcode' | 'mixed';
@@ -24,6 +25,10 @@ export interface CourseAttendanceSession {
     id: string;
     name: string;
   };
+  attendance_group?: {
+    id: string;
+    name: string;
+  } | null;
   records?: CourseAttendanceRecord[];
   records_count?: number;
   present_count?: number;
@@ -51,6 +56,25 @@ export interface CourseAttendanceRecord {
     card_number: string | null;
     admission_no: string | null;
   };
+}
+
+export interface CourseAttendanceGroupStudent {
+  id: string;
+  full_name: string;
+  father_name: string | null;
+  admission_no: string | null;
+}
+
+export interface CourseAttendanceGroup {
+  id: string;
+  organization_id: string;
+  school_id: string;
+  course_id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  students_count: number;
+  students: CourseAttendanceGroupStudent[];
 }
 
 export interface CourseRosterStudent {
@@ -99,6 +123,7 @@ export const useCreateCourseAttendanceSession = () => {
   return useMutation({
     mutationFn: async (data: {
       course_id: string;
+      attendance_group_id?: string | null;
       session_date: string;
       session_title?: string | null;
       method?: string;
@@ -148,17 +173,98 @@ export const useDeleteCourseAttendanceSession = () => {
   });
 };
 
-export const useCourseRoster = (courseId: string | undefined) => {
+export const useCourseAttendanceGroups = (courseId?: string) => {
+  const { user, profile } = useAuth();
+
+  return useQuery<CourseAttendanceGroup[]>({
+    queryKey: ['course-attendance-groups', courseId ?? null, profile?.organization_id ?? null, profile?.default_school_id ?? null],
+    queryFn: async () => {
+      if (!user || !profile?.organization_id || !profile.default_school_id || !courseId) return [];
+      const groups = await courseAttendanceGroupsApi.list({ course_id: courseId });
+      return (Array.isArray(groups) ? groups : []) as CourseAttendanceGroup[];
+    },
+    enabled: !!user && !!profile?.organization_id && !!profile?.default_school_id && !!courseId,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useCreateCourseAttendanceGroup = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      course_id: string;
+      name: string;
+      description?: string | null;
+      student_ids: string[];
+    }) => {
+      const group = await courseAttendanceGroupsApi.create(data);
+      return group as CourseAttendanceGroup;
+    },
+    onSuccess: () => {
+      showToast.success('toast.courseAttendance.groupCreated');
+      void queryClient.invalidateQueries({ queryKey: ['course-attendance-groups'] });
+    },
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseAttendance.groupCreateFailed'),
+  });
+};
+
+export const useUpdateCourseAttendanceGroup = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: {
+      id: string;
+      data: {
+        name?: string;
+        description?: string | null;
+        is_active?: boolean;
+        student_ids?: string[];
+      };
+    }) => {
+      const group = await courseAttendanceGroupsApi.update(id, data);
+      return group as CourseAttendanceGroup;
+    },
+    onSuccess: () => {
+      showToast.success('toast.courseAttendance.groupUpdated');
+      void queryClient.invalidateQueries({ queryKey: ['course-attendance-groups'] });
+    },
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseAttendance.groupUpdateFailed'),
+  });
+};
+
+export const useDeleteCourseAttendanceGroup = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await courseAttendanceGroupsApi.delete(id);
+      return id;
+    },
+    onSuccess: async () => {
+      showToast.success('toast.courseAttendance.groupDeleted');
+      await queryClient.invalidateQueries({ queryKey: ['course-attendance-groups'] });
+      await queryClient.refetchQueries({ queryKey: ['course-attendance-groups'] });
+    },
+    onError: (error: Error) => showToast.error(error.message || 'toast.courseAttendance.groupDeleteFailed'),
+  });
+};
+
+export const useCourseRoster = (courseId: string | undefined, attendanceGroupId?: string | null) => {
   const { user, profile } = useAuth();
 
   return useQuery<CourseRosterStudent[]>({
-    queryKey: ['course-roster', courseId, profile?.organization_id ?? null, profile?.default_school_id ?? null],
+    queryKey: ['course-roster', courseId, attendanceGroupId ?? null, profile?.organization_id ?? null, profile?.default_school_id ?? null],
     queryFn: async () => {
-      if (!user || !profile || !courseId) return [];
-      const roster = await courseAttendanceSessionsApi.roster({ course_id: courseId });
+      if (!user || !profile?.organization_id || !profile.default_school_id || !courseId) return [];
+      const roster = await courseAttendanceSessionsApi.roster({
+        course_id: courseId,
+        ...(attendanceGroupId ? { attendance_group_id: attendanceGroupId } : {}),
+      });
       return roster as CourseRosterStudent[];
     },
-    enabled: !!user && !!profile && !!courseId && courseId.trim() !== '',
+    enabled: !!user && !!profile?.organization_id && !!profile?.default_school_id && !!courseId && courseId.trim() !== '',
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });

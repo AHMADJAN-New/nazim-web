@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { Printer, Award, User, TrendingUp, BookOpen, Trophy, AlertCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import { CombinedExamResultCard, type CombinedReportCard } from '@/components/exams/CombinedExamResultCard';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
@@ -11,7 +13,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useExams, useLatestExamFromCurrentYear, useExamClasses } from '@/hooks/useExams';
 import { useExamStudentsWithNumbers } from '@/hooks/useExamNumbers';
-import { useExportStudentExamReportCardsPdf } from '@/hooks/useExportStudentExamReportCardsPdf';
+import { translateCombinedExamError, useExportStudentExamReportCardsPdf } from '@/hooks/useExportStudentExamReportCardsPdf';
+import { getReportLocaleOptions } from '@/lib/reporting/reportLocaleOptions';
+import { showToast } from '@/lib/toast';
 import { formatDate } from '@/lib/utils';
 import { calculateGrade } from '@/lib/utils/gradeCalculator';
 import { useGrades } from '@/hooks/useGrades';
@@ -515,7 +519,7 @@ function GradeCard({
 }
 
 export default function StudentExamReport() {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const canViewReports = useHasPermission('students.read');
   const { data: profile } = useProfile();
   const { data: organization } = useCurrentOrganization();
@@ -525,6 +529,7 @@ export default function StudentExamReport() {
 
   const [selectedExamStudentIds, setSelectedExamStudentIds] = useState<string[]>([]);
   const [selectedExamId, setSelectedExamId] = useState<string>('');
+  const [selectedSecondExamId, setSelectedSecondExamId] = useState<string>('');
   const [selectedClassId, setSelectedClassId] = useState<string>('');
 
   const { data: exams, isLoading: examsLoading } = useExams();
@@ -558,6 +563,7 @@ export default function StudentExamReport() {
   useEffect(() => {
     setSelectedClassId('');
     setSelectedExamStudentIds([]);
+    setSelectedSecondExamId('');
   }, [selectedExamId]);
 
   useEffect(() => {
@@ -571,6 +577,16 @@ export default function StudentExamReport() {
     value: exam.id,
     label: `${exam.name}${exam.academicYear ? ` (${exam.academicYear.name})` : ''}`,
   }));
+
+  const secondExamOptions: ComboboxOption[] = useMemo(
+    () => (exams || [])
+      .filter((exam) => exam.id !== selectedExamId && exam.academicYearId === selectedExam?.academicYearId)
+      .map((exam) => ({
+        value: exam.id,
+        label: exam.name,
+      })),
+    [exams, selectedExam?.academicYearId, selectedExamId],
+  );
 
   const classOptions: ComboboxOption[] = (examClasses || []).map((examClass) => {
     const className = examClass.classAcademicYear?.class?.name || 'Unknown';
@@ -613,17 +629,65 @@ export default function StudentExamReport() {
 
       return Promise.all(reportPromises);
     },
-    enabled: Boolean(selectedExamStudentIds.length > 0 && selectedExamId),
+    enabled: Boolean(selectedExamStudentIds.length > 0 && selectedExamId && !selectedSecondExamId),
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
+
+  const {
+    data: combinedCards,
+    isLoading: combinedLoading,
+    isFetching: combinedFetching,
+    error: combinedError,
+  } = useQuery({
+    queryKey: [
+      'combined-student-exam-reports',
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+      selectedExamId,
+      selectedSecondExamId,
+      selectedExamStudentIds.join(','),
+      language,
+    ],
+    queryFn: async () => {
+      const locale = getReportLocaleOptions(language);
+      const response = await examsApi.combinedStudentReports(selectedExamId, {
+        second_exam_id: selectedSecondExamId,
+        exam_student_ids: selectedExamStudentIds,
+        language: locale.language,
+        calendar_preference: locale.calendarPreference,
+      });
+      return (response.cards ?? []) as CombinedReportCard[];
+    },
+    enabled: Boolean(
+      selectedExamStudentIds.length > 0
+      && selectedExamId
+      && selectedSecondExamId
+      && profile?.organization_id
+      && profile?.default_school_id,
+    ),
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+
+  const translateRef = useRef(t);
+  translateRef.current = t;
+  const combinedErrorMessage = combinedError instanceof Error ? combinedError.message : '';
+
+  useEffect(() => {
+    if (!combinedErrorMessage) return;
+    const translate = translateRef.current;
+    showToast.error(translateCombinedExamError(combinedErrorMessage, translate) || translate('examReports.noDataAvailable'));
+  }, [combinedErrorMessage]);
 
   const handlePrint = () => {
     if (!selectedExamId || selectedExamStudentIds.length === 0) return;
     setExportDialogOpen(true);
     exportPdf.mutate({
       examId: selectedExamId,
+      secondExamId: selectedSecondExamId || undefined,
       examStudentIds: selectedExamStudentIds,
       brandingId: profile?.default_school_id || undefined,
     });
@@ -665,7 +729,7 @@ export default function StudentExamReport() {
       />
 
       <FilterPanel title={t('library.selectStudent')} className="no-print">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label htmlFor="exam">{t('examReports.selectExam')}</Label>
               <Combobox
@@ -684,6 +748,23 @@ export default function StudentExamReport() {
                   {t('examReports.academicYear')}: <span className="font-semibold">{academicYear.name}</span>
                 </p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="second-exam">{t('studentReportCard.combineWithExam')}</Label>
+              <Combobox
+                options={[
+                  { value: '__single__', label: t('studentReportCard.singleExamCard') },
+                  ...secondExamOptions,
+                ]}
+                value={selectedSecondExamId || '__single__'}
+                onValueChange={(val) => setSelectedSecondExamId(val === '__single__' ? '' : val)}
+                placeholder={t('studentReportCard.singleExamCard')}
+                searchPlaceholder={t('events.search')}
+                emptyText={t('exams.noExams')}
+                disabled={!selectedExamId || examsLoading}
+              />
+              <p className="text-xs text-muted-foreground">{t('studentReportCard.combineHint')}</p>
             </div>
 
             <div className="space-y-2">
@@ -761,15 +842,22 @@ export default function StudentExamReport() {
             <div className="flex gap-2 mt-4">
               <Button
                 variant="outline"
+                size="sm"
+                className="flex-shrink-0"
                 onClick={handlePrint}
                 disabled={exportPdf.isPending || exportPdf.isPolling}
+                aria-label={selectedSecondExamId ? t('studentReportCard.exportCombinedPdf') : t('studentReportCard.printCard')}
               >
-                <Printer className="h-4 w-4 mr-2" />
-                {exportPdf.isPolling
-                  ? (t('studentReportCard.generating') || 'Generating...')
-                  : t('studentReportCard.printCard')}
+                <Printer className="h-4 w-4" />
+                <span className="ms-2 hidden sm:inline">
+                  {exportPdf.isPolling
+                    ? t('studentReportCard.generating')
+                    : selectedSecondExamId
+                      ? t('studentReportCard.exportCombinedPdf')
+                      : t('studentReportCard.printCard')}
+                </span>
               </Button>
-              {reportsData && reportsData.length > 0 && reportsData.some(r => r !== null) && (
+              {!selectedSecondExamId && reportsData && reportsData.length > 0 && reportsData.some(r => r !== null) && (
                 <ReportExportButtons
                   data={reportsData.filter((r): r is StudentReportData => r !== null)}
                   columns={[
@@ -837,7 +925,50 @@ export default function StudentExamReport() {
           )}
       </FilterPanel>
 
-      {selectedExamStudentIds.length > 0 && selectedExamId && (
+      {selectedExamStudentIds.length > 0 && selectedExamId && selectedSecondExamId && (
+        <div className="space-y-6">
+          {combinedLoading || combinedFetching ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="space-y-4">
+                  <Skeleton className="mx-auto h-8 w-3/4" />
+                  <Skeleton className="mx-auto h-6 w-1/2" />
+                  <Skeleton className="h-64 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ) : combinedError ? (
+            <Card>
+              <CardContent className="flex items-center justify-center py-12">
+                <div className="space-y-2 text-center">
+                  <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <p className="text-muted-foreground">
+                    {translateCombinedExamError(combinedError instanceof Error ? combinedError.message : '', t)
+                      || t('examReports.noDataAvailable')}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : combinedCards && combinedCards.length > 0 ? (
+            combinedCards.map((card) => (
+              <CombinedExamResultCard
+                key={card.student.exam_student_id || card.student.id || card.student.full_name}
+                card={card}
+                schoolName={school?.schoolName}
+                organizationName={organization?.name}
+              />
+            ))
+          ) : (
+            <Card>
+              <CardContent className="flex items-center justify-center py-12">
+                <p className="text-muted-foreground">{t('examReports.noDataAvailable')}</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {selectedExamStudentIds.length > 0 && selectedExamId && !selectedSecondExamId && (
         <div className="space-y-6">
           {reportsLoading || reportsFetching ? (
             <Card>

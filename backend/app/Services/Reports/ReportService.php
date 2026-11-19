@@ -653,6 +653,18 @@ class ReportService
             $layout['show_generation_date'] = $layout['show_generation_date'] ?? true;
         }
 
+        if ($templateName === 'combined-student-report-card' || $config->reportKey === 'combined_student_report_card') {
+            $layout['font_family'] = 'Bahij Nassim';
+            $layout['font_size'] = '9px';
+            $layout['rtl'] = StudentExamReportCardLabels::isRtl((string) $config->language);
+            $layout['orientation'] = 'landscape';
+            $layout['page_size'] = 'A4';
+            $layout['margins'] = '8mm 8mm 16mm 8mm';
+            $layout['logo_height_px'] = $layout['logo_height_px'] ?? 48;
+            $layout['show_page_numbers'] = true;
+            $layout['show_generation_date'] = true;
+        }
+
         if ($templateName === 'leave-request-slip' || $config->reportKey === 'leave_request_slip') {
             $layout['font_family'] = 'Bahij Nassim';
             $layout['font_size'] = $layout['font_size'] ?? '7px';

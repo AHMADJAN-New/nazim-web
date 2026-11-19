@@ -413,7 +413,7 @@ export const useCreateExamTime = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   return useMutation({
-    mutationFn: ({ examId, data }: { examId: string; data: Partial<ExamTime> }) => {
+    mutationFn: ({ examId, data }: { examId: string; data: Partial<ExamTime> & { classSubjectId?: string } }) => {
       const insertData = mapExamTimeDomainToInsert(data);
       return examTimesApi.create(examId, insertData);
     },
@@ -432,7 +432,7 @@ export const useUpdateExamTime = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<ExamTime> }) => {
+    mutationFn: ({ id, data }: { id: string; data: Partial<ExamTime> & { syncSlot?: boolean; classSubjectId?: string } }) => {
       const updateData = mapExamTimeDomainToUpdate(data);
       return examTimesApi.update(id, updateData);
     },
@@ -443,6 +443,22 @@ export const useUpdateExamTime = () => {
     },
     onError: (error: Error) => {
       showToast.error(error?.message || t('toast.examTimeUpdateFailed') || 'Failed to update time slot');
+    },
+  });
+};
+
+export const useReorderExamTimes = () => {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+  return useMutation({
+    mutationFn: ({ examId, examTimeIds }: { examId: string; examTimeIds: string[] }) =>
+      examTimesApi.reorder(examId, { exam_time_ids: examTimeIds }),
+    onSuccess: () => {
+      showToast.success(t('exams.subjectsReordered'));
+      void queryClient.invalidateQueries({ queryKey: ['exam-times'] });
+    },
+    onError: (error: Error) => {
+      showToast.error(error?.message || t('exams.reorderSubjectsFailed'));
     },
   });
 };

@@ -1,3 +1,6 @@
+import { dateToLocalYYYYMMDD, parseApiDateInput } from '@/lib/dateUtils';
+import { normalizeClock } from '@/lib/examScheduleSlots';
+
 import { mapExamTypeApiToDomain } from './examTypeMapper';
 
 import type * as ExamApi from '@/types/api/exam';
@@ -96,7 +99,27 @@ export const mapExamClassApiToDomain = (examClass: ExamApi.ExamClass): ExamClass
       deletedAt: examClass.class_academic_year.deleted_at
         ? new Date(examClass.class_academic_year.deleted_at)
         : null,
-      class: examClass.class_academic_year.class,
+      class: examClass.class_academic_year.class
+        ? {
+          id: examClass.class_academic_year.class.id,
+          organizationId: examClass.class_academic_year.class.organization_id ?? null,
+          name: examClass.class_academic_year.class.name,
+          code: examClass.class_academic_year.class.code ?? '',
+          gradeLevel: examClass.class_academic_year.class.grade_level ?? null,
+          description: examClass.class_academic_year.class.description ?? null,
+          defaultCapacity: examClass.class_academic_year.class.default_capacity ?? 0,
+          isActive: examClass.class_academic_year.class.is_active ?? true,
+          createdAt: examClass.class_academic_year.class.created_at
+            ? new Date(examClass.class_academic_year.class.created_at)
+            : new Date(),
+          updatedAt: examClass.class_academic_year.class.updated_at
+            ? new Date(examClass.class_academic_year.class.updated_at)
+            : new Date(),
+          deletedAt: examClass.class_academic_year.class.deleted_at
+            ? new Date(examClass.class_academic_year.class.deleted_at)
+            : null,
+        }
+        : undefined,
       academicYear: examClass.class_academic_year.academic_year
         ? {
           id: examClass.class_academic_year.academic_year.id,
@@ -166,9 +189,10 @@ export const mapExamTimeApiToDomain = (examTime: ExamApi.ExamTime): ExamTime => 
   examId: examTime.exam_id,
   examClassId: examTime.exam_class_id,
   examSubjectId: examTime.exam_subject_id,
-  date: new Date(examTime.date),
-  startTime: examTime.start_time,
-  endTime: examTime.end_time,
+  date: parseApiDateInput(examTime.date) ?? new Date(examTime.date),
+  startTime: normalizeClock(examTime.start_time),
+  endTime: normalizeClock(examTime.end_time),
+  sortOrder: examTime.sort_order ?? 0,
   roomId: examTime.room_id ?? null,
   invigilatorId: examTime.invigilator_id ?? null,
   notes: examTime.notes ?? null,
@@ -196,25 +220,32 @@ export const mapExamTimeApiToDomain = (examTime: ExamApi.ExamTime): ExamTime => 
     : undefined,
 });
 
-export const mapExamTimeDomainToInsert = (examTime: Partial<ExamTime>): ExamApi.ExamTimeInsert => ({
+export const mapExamTimeDomainToInsert = (examTime: Partial<ExamTime> & { classSubjectId?: string }): ExamApi.ExamTimeInsert => ({
   exam_class_id: examTime.examClassId!,
-  exam_subject_id: examTime.examSubjectId!,
-  date: examTime.date ? examTime.date.toISOString().slice(0, 10) : '',
-  start_time: examTime.startTime!,
-  end_time: examTime.endTime!,
+  exam_subject_id: examTime.examSubjectId,
+  class_subject_id: examTime.classSubjectId,
+  date: examTime.date ? dateToLocalYYYYMMDD(examTime.date) : '',
+  start_time: normalizeClock(examTime.startTime),
+  end_time: normalizeClock(examTime.endTime),
   room_id: examTime.roomId ?? null,
   invigilator_id: examTime.invigilatorId ?? null,
   notes: examTime.notes ?? null,
+  sort_order: examTime.sortOrder,
 });
 
-export const mapExamTimeDomainToUpdate = (examTime: Partial<ExamTime>): ExamApi.ExamTimeUpdate => ({
-  date: examTime.date ? examTime.date.toISOString().slice(0, 10) : undefined,
-  start_time: examTime.startTime,
-  end_time: examTime.endTime,
+export const mapExamTimeDomainToUpdate = (examTime: Partial<ExamTime> & { syncSlot?: boolean; classSubjectId?: string }): ExamApi.ExamTimeUpdate => ({
+  exam_class_id: examTime.examClassId,
+  exam_subject_id: examTime.examSubjectId,
+  class_subject_id: examTime.classSubjectId,
+  date: examTime.date ? dateToLocalYYYYMMDD(examTime.date) : undefined,
+  start_time: examTime.startTime ? normalizeClock(examTime.startTime) : undefined,
+  end_time: examTime.endTime ? normalizeClock(examTime.endTime) : undefined,
   room_id: examTime.roomId,
   invigilator_id: examTime.invigilatorId,
   notes: examTime.notes,
   is_locked: examTime.isLocked,
+  sort_order: examTime.sortOrder,
+  sync_slot: examTime.syncSlot,
 });
 
 const mapReportSubjectApiToDomain = (subject: ExamApi.ExamReportSubject): ExamReportSubject => ({

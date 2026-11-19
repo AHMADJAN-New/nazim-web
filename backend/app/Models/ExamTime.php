@@ -12,9 +12,13 @@ class ExamTime extends Model
     use HasFactory, SoftDeletes;
 
     protected $connection = 'pgsql';
+
     protected $table = 'exam_times';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $primaryKey = 'id';
 
     protected $fillable = [
@@ -31,6 +35,7 @@ class ExamTime extends Model
         'invigilator_id',
         'notes',
         'is_locked',
+        'sort_order',
     ];
 
     protected $casts = [
@@ -38,6 +43,7 @@ class ExamTime extends Model
         'start_time' => 'string',
         'end_time' => 'string',
         'is_locked' => 'boolean',
+        'sort_order' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -182,18 +188,18 @@ class ExamTime extends Model
 
         // Check for time overlap
         $query->where(function ($q) use ($startTime, $endTime) {
-            $q->where(function ($inner) use ($startTime, $endTime) {
+            $q->where(function ($inner) use ($startTime) {
                 // New time starts during existing time
                 $inner->where('start_time', '<=', $startTime)
-                      ->where('end_time', '>', $startTime);
-            })->orWhere(function ($inner) use ($startTime, $endTime) {
+                    ->where('end_time', '>', $startTime);
+            })->orWhere(function ($inner) use ($endTime) {
                 // New time ends during existing time
                 $inner->where('start_time', '<', $endTime)
-                      ->where('end_time', '>=', $endTime);
+                    ->where('end_time', '>=', $endTime);
             })->orWhere(function ($inner) use ($startTime, $endTime) {
                 // New time completely contains existing time
                 $inner->where('start_time', '>=', $startTime)
-                      ->where('end_time', '<=', $endTime);
+                    ->where('end_time', '<=', $endTime);
             });
         });
 

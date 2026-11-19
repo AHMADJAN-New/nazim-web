@@ -110,7 +110,13 @@ export default {
       sessionClosed: "جلسه حاضري با موفقیت بسته شد",
       sessionCreated: "جلسه حاضري با موفقیت ایجاد شد",
       sessionDeleted: "جلسه حاضري با موفقیت حذف شد",
-      sessionUpdated: "جلسه حاضري با موفقیت به‌روزرسانی شد"
+      sessionUpdated: "جلسه حاضري با موفقیت به‌روزرسانی شد",
+      groupCreated: "گروپ حاضري ایجاد شد",
+      groupUpdated: "گروپ حاضري به‌روزرسانی شد",
+      groupDeleted: "گروپ حاضري حذف شد",
+      groupCreateFailed: "ایجاد گروپ حاضري ناموفق بود",
+      groupUpdateFailed: "به‌روزرسانی گروپ حاضري ناموفق بود",
+      groupDeleteFailed: "حذف گروپ حاضري ناموفق بود"
     },
     courseClosed: "کورس بسته شد",
     courseDeleted: "کورس حذف شد",

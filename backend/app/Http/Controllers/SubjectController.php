@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Subject;
 use App\Http\Requests\StoreSubjectRequest;
 use App\Http\Requests\UpdateSubjectRequest;
+use App\Models\Subject;
 use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +15,7 @@ class SubjectController extends Controller
     public function __construct(
         private ActivityLogService $activityLogService
     ) {}
+
     /**
      * Display a listing of subjects
      */
@@ -23,22 +24,23 @@ class SubjectController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subjects.read')) {
+            if (! $user->hasPermissionTo('subjects.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subjects.read: " . $e->getMessage());
+            Log::warning('Permission check failed for subjects.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -47,25 +49,41 @@ class SubjectController extends Controller
             ->where('organization_id', $profile->organization_id)
             ->where('school_id', $currentSchoolId);
 
+        $search = trim((string) $request->query('search', ''));
+        if ($search !== '') {
+            $like = '%'.addcslashes(mb_substr($search, 0, 100), '\\%_').'%';
+            $query->where(function ($inner) use ($like) {
+                $inner->where('name', 'ilike', $like)
+                    ->orWhere('code', 'ilike', $like)
+                    ->orWhere('description', 'ilike', $like);
+            });
+        }
+
+        $query->orderBy('name', 'asc');
+
+        // all=1 is the full catalog for bulk assign and exports.
+        // It ignores page/per_page so those screens are not limited to the current page.
+        if ($request->boolean('all')) {
+            return response()->json($query->get());
+        }
+
         // Support pagination if page and per_page parameters are provided
         if ($request->has('page') || $request->has('per_page')) {
             $perPage = $request->input('per_page', 25);
             // Validate per_page is one of allowed values
             $allowedPerPage = [10, 25, 50, 100];
-            if (!in_array((int)$perPage, $allowedPerPage)) {
+            if (! in_array((int) $perPage, $allowedPerPage, true)) {
                 $perPage = 25; // Default to 25 if invalid
             }
-            
-            $subjects = $query->orderBy('name', 'asc')->paginate((int)$perPage);
-            
+
+            $subjects = $query->paginate((int) $perPage);
+
             // Return paginated response in Laravel's standard format
             return response()->json($subjects);
         }
 
         // Return all results if no pagination requested (backward compatibility)
-        $subjects = $query->orderBy('name', 'asc')->get();
-
-        return response()->json($subjects);
+        return response()->json($query->get());
     }
 
     /**
@@ -76,22 +94,23 @@ class SubjectController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subjects.create')) {
+            if (! $user->hasPermissionTo('subjects.create')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subjects.create: " . $e->getMessage());
+            Log::warning('Permission check failed for subjects.create: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -121,7 +140,7 @@ class SubjectController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log subject creation: ' . $e->getMessage());
+            Log::warning('Failed to log subject creation: '.$e->getMessage());
         }
 
         return response()->json($subject, 201);
@@ -135,22 +154,23 @@ class SubjectController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subjects.read')) {
+            if (! $user->hasPermissionTo('subjects.read')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subjects.read: " . $e->getMessage());
+            Log::warning('Permission check failed for subjects.read: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -160,7 +180,7 @@ class SubjectController extends Controller
             ->where('school_id', $currentSchoolId)
             ->find($id);
 
-        if (!$subject) {
+        if (! $subject) {
             return response()->json(['error' => 'Subject not found'], 404);
         }
 
@@ -177,22 +197,23 @@ class SubjectController extends Controller
         $user = $request->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subjects.update')) {
+            if (! $user->hasPermissionTo('subjects.update')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subjects.update: " . $e->getMessage());
+            Log::warning('Permission check failed for subjects.update: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -202,7 +223,7 @@ class SubjectController extends Controller
             ->where('school_id', $currentSchoolId)
             ->find($id);
 
-        if (!$subject) {
+        if (! $subject) {
             return response()->json(['error' => 'Subject not found'], 404);
         }
 
@@ -248,7 +269,7 @@ class SubjectController extends Controller
                 request: $request
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log subject update: ' . $e->getMessage());
+            Log::warning('Failed to log subject update: '.$e->getMessage());
         }
 
         return response()->json($subject);
@@ -262,22 +283,23 @@ class SubjectController extends Controller
         $user = request()->user();
         $profile = DB::table('profiles')->where('id', $user->id)->first();
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['error' => 'Profile not found'], 404);
         }
 
         // Require organization_id for all users
-        if (!$profile->organization_id) {
+        if (! $profile->organization_id) {
             return response()->json(['error' => 'User must be assigned to an organization'], 403);
         }
 
         // Check permission WITH organization context
         try {
-            if (!$user->hasPermissionTo('subjects.delete')) {
+            if (! $user->hasPermissionTo('subjects.delete')) {
                 return response()->json(['error' => 'This action is unauthorized'], 403);
             }
         } catch (\Exception $e) {
-            Log::warning("Permission check failed for subjects.delete: " . $e->getMessage());
+            Log::warning('Permission check failed for subjects.delete: '.$e->getMessage());
+
             return response()->json(['error' => 'This action is unauthorized'], 403);
         }
 
@@ -287,7 +309,7 @@ class SubjectController extends Controller
             ->where('school_id', $currentSchoolId)
             ->find($id);
 
-        if (!$subject) {
+        if (! $subject) {
             return response()->json(['error' => 'Subject not found'], 404);
         }
 
@@ -306,12 +328,9 @@ class SubjectController extends Controller
                 request: request()
             );
         } catch (\Exception $e) {
-            Log::warning('Failed to log subject deletion: ' . $e->getMessage());
+            Log::warning('Failed to log subject deletion: '.$e->getMessage());
         }
 
         return response()->noContent();
     }
 }
-
-
-

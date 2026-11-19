@@ -21,8 +21,8 @@ import { Button } from '@/components/ui/button';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useClassAcademicYears, useAllClassAcademicYears, useClasses } from '@/hooks/useClasses';
 import { useClassYearUrlFilters } from '@/hooks/useClassYearUrlFilters';
-import { useSubjects, useClassSubjects, useSubjectHistory, useCreateSubject, useUpdateSubject, useDeleteSubject, useAssignSubjectToClass, useUpdateClassSubject, useRemoveSubjectFromClass, useBulkAssignSubjects, useCopySubjectsBetweenYears, useClassSubjectTemplates, useAssignSubjectToClassTemplate, useRemoveSubjectFromClassTemplate, useBulkAssignSubjectsToClassTemplate } from '@/hooks/useSubjects';
-import type { Subject } from '@/types/domain/subject';
+import { useSubjects, useAllSubjects, fetchAllSubjects, useClassSubjects, useSubjectHistory, useCreateSubject, useUpdateSubject, useDeleteSubject, useAssignSubjectToClass, useUpdateClassSubject, useRemoveSubjectFromClass, useBulkAssignSubjects, useCopySubjectsBetweenYears, useClassSubjectTemplates, useAssignSubjectToClassTemplate, useRemoveSubjectFromClassTemplate, useBulkAssignSubjectsToClassTemplate } from '@/hooks/useSubjects';
+import type { ClassSubjectTemplate, Subject } from '@/types/domain/subject';
 import { useProfile } from '@/hooks/useProfiles';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useRooms } from '@/hooks/useRooms';
@@ -58,6 +58,39 @@ import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterPanel } from '@/components/layout/FilterPanel';
 
+
+function subjectsAvailableForClass(
+    templates: ClassSubjectTemplate[] | undefined,
+    classId: string | undefined,
+    catalog: Subject[],
+    assignedSubjectIds: string[],
+): Subject[] {
+    if (!classId) return [];
+
+    const assigned = new Set(assignedSubjectIds);
+    const catalogById = new Map(catalog.map((subject) => [subject.id, subject]));
+    const seen = new Set<string>();
+    const available: Subject[] = [];
+
+    for (const template of templates ?? []) {
+        if (template.classId !== classId || !template.subjectId || seen.has(template.subjectId)) {
+            continue;
+        }
+        if (assigned.has(template.subjectId)) {
+            continue;
+        }
+
+        const subject = catalogById.get(template.subjectId) ?? template.subject;
+        if (!subject || subject.isActive === false) {
+            continue;
+        }
+
+        seen.add(template.subjectId);
+        available.push(subject);
+    }
+
+    return available;
+}
 
 const subjectSchema = z.object({
     name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -154,7 +187,8 @@ export function SubjectsManagement() {
         academicYearIds,
         profile?.organization_id,
     );
-    // Paginated list for the base subjects table
+    // Paginated list for the base subjects table. Search is applied on the server
+    // so it is not limited to the current page.
     const { 
         subjects, 
         isLoading: subjectsLoading,
@@ -163,28 +197,34 @@ export function SubjectsManagement() {
         pageSize,
         setPage,
         setPageSize,
-    } = useSubjects(profile?.organization_id, true);
-    // Unpaginated list for subject dropdowns in assign/copy dialogs
-    const { data: allSubjects = [], isLoading: allSubjectsLoading } = useSubjects(
+    } = useSubjects(profile?.organization_id, true, searchQuery);
+    // Full catalog for bulk assign and the single-subject pickers.
+    const { data: allSubjects = [], isLoading: allSubjectsLoading } = useAllSubjects(
         profile?.organization_id,
-        false,
     );
-    
-    // For Step 1, use selectedClassId directly. For Step 2, get classId from selectedClassAcademicYearId
+
+    const step2ClassId = useMemo(() => {
+        if (!selectedClassAcademicYearId || !classAcademicYears) return undefined;
+        return classAcademicYears.find((cay) => cay.id === selectedClassAcademicYearId)?.classId;
+    }, [selectedClassAcademicYearId, classAcademicYears]);
+
+    // Step 1 templates follow the selected class. Step 2 uses the class academic year's class.
     const classIdForTemplates = useMemo(() => {
-        // In Step 1 (Class Subjects tab), use selectedClassId
         if (activeTab === 'classSubjects' && selectedClassId) {
             return selectedClassId;
         }
-        // In Step 2, get classId from selectedClassAcademicYearId
-        if (selectedClassAcademicYearId && selectedClassAcademicYearId !== '' && classAcademicYears) {
-            const selectedClassAcademicYear = classAcademicYears.find(cay => cay.id === selectedClassAcademicYearId);
-            return selectedClassAcademicYear?.classId;
-        }
-        return undefined;
-    }, [activeTab, selectedClassId, selectedClassAcademicYearId, classAcademicYears]);
-    
+        return step2ClassId;
+    }, [activeTab, selectedClassId, step2ClassId]);
+
+    const needsStep2TemplateFetch = !!step2ClassId && step2ClassId !== classIdForTemplates;
+
     const { data: classSubjectTemplates, isLoading: classSubjectTemplatesLoading } = useClassSubjectTemplates(classIdForTemplates, profile?.organization_id);
+    const { data: step2ClassTemplates, isLoading: step2TemplatesLoading } = useClassSubjectTemplates(
+        needsStep2TemplateFetch ? step2ClassId : undefined,
+        profile?.organization_id,
+    );
+    const templatesForStep2 = needsStep2TemplateFetch ? step2ClassTemplates : classSubjectTemplates;
+    const step2TemplatesLoadingState = needsStep2TemplateFetch ? step2TemplatesLoading : classSubjectTemplatesLoading;
     const { data: classSubjects, isLoading: classSubjectsLoading } = useClassSubjects(
         selectedClassAcademicYearId || undefined, 
         profile?.organization_id
@@ -668,24 +708,56 @@ export function SubjectsManagement() {
                                         {t('academic.subjects.management')}
                                     </CardDescription>
                                 </div>
-                                {hasCreatePermission && (
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => navigate('/settings/subjects/import')}
-                                            className="flex-shrink-0"
-                                            aria-label={t('academic.subjects.bulkImport')}
-                                            data-tour="subjects-import-button"
-                                        >
-                                            <Upload className="h-4 w-4 sm:mr-2" />
-                                            <span className="hidden sm:inline">{t('academic.subjects.bulkImport')}</span>
-                                        </Button>
-                                        <Button onClick={() => handleOpenSubjectDialog()} className="flex-shrink-0" data-tour="subjects-create-button">
-                                            <Plus className="h-4 w-4 sm:mr-2" />
-                                            <span className="hidden sm:inline">{t('academic.subjects.addSubject')}</span>
-                                        </Button>
-                                    </div>
-                                )}
+                                <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                                    <ReportExportButtons
+                                        data={filteredSubjects}
+                                        columns={[
+                                            { key: 'code', label: t('academic.subjects.code') },
+                                            { key: 'name', label: t('academic.subjects.name') },
+                                            { key: 'description', label: t('academic.subjects.description') },
+                                            { key: 'isActive', label: t('academic.subjects.isActive') },
+                                        ]}
+                                        reportKey="subjects_list"
+                                        title={t('academic.subjects.baseSubjects')}
+                                        transformData={(rows) => rows.map((subject) => ({
+                                            code: subject.code || '',
+                                            name: subject.name || '',
+                                            description: subject.description || '',
+                                            isActive: subject.isActive === false
+                                                ? t('academic.subjects.inactive')
+                                                : t('academic.subjects.active'),
+                                        }))}
+                                        getExportData={() => fetchAllSubjects(profile?.organization_id, searchQuery)}
+                                        buildFiltersSummary={() => {
+                                            const filters: string[] = [];
+                                            if (searchQuery.trim()) {
+                                                filters.push(`${t('events.search')}: ${searchQuery.trim()}`);
+                                            }
+                                            return filters.join(' | ');
+                                        }}
+                                        schoolId={profile?.default_school_id}
+                                        templateType="subjects"
+                                        disabled={subjectsLoading || filteredSubjects.length === 0}
+                                    />
+                                    {hasCreatePermission && (
+                                        <>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => navigate('/settings/subjects/import')}
+                                                className="flex-shrink-0"
+                                                aria-label={t('academic.subjects.bulkImport')}
+                                                data-tour="subjects-import-button"
+                                            >
+                                                <Upload className="h-4 w-4 sm:mr-2" />
+                                                <span className="hidden sm:inline">{t('academic.subjects.bulkImport')}</span>
+                                            </Button>
+                                            <Button onClick={() => handleOpenSubjectDialog()} className="flex-shrink-0" data-tour="subjects-create-button">
+                                                <Plus className="h-4 w-4 sm:mr-2" />
+                                                <span className="hidden sm:inline">{t('academic.subjects.addSubject')}</span>
+                                            </Button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -701,7 +773,10 @@ export function SubjectsManagement() {
                                         <Input
                                             placeholder={t('academic.subjects.searchPlaceholder')}
                                             value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            onChange={(e) => {
+                                                setSearchQuery(e.target.value);
+                                                setPage(1);
+                                            }}
                                             className="pl-10"
                                         />
                                     </div>
@@ -1275,49 +1350,27 @@ export function SubjectsManagement() {
                                 name="subject_id"
                                 control={controlAssign}
                                 render={({ field }) => {
-                                    // Get class_id from selectedClassAcademicYearId
-                                    const selectedClassAcademicYear = classAcademicYears?.find(cay => cay.id === selectedClassAcademicYearId);
-                                    const classIdForStep2 = selectedClassAcademicYear?.classId;
-                                    
-                                    // Get subjects assigned to this class in Step 1 (from class-subject-templates)
-                                    const classTemplateSubjectIds = classSubjectTemplates
-                                        ?.filter(template => template.classId === classIdForStep2)
-                                        .map(template => template.subjectId) || [];
-                                    
-                                    // Filter out already assigned subjects (from class-subjects)
+                                    const classIdForStep2 = step2ClassId;
                                     const assignedSubjectIds = classSubjects?.map(cs => cs.subjectId) || [];
-                                    
-                                    // Only show subjects that:
-                                    // 1. Are active
-                                    // 2. Are assigned to the class in Step 1 (class-subject-templates)
-                                    // 3. Are not already assigned to this class instance (class-subjects)
-                                    const availableSubjects = allSubjects.filter(s => 
-                                        s.isActive && 
-                                        classTemplateSubjectIds.includes(s.id) &&
-                                        !assignedSubjectIds.includes(s.id)
+                                    const classTemplateCount = (templatesForStep2 ?? [])
+                                        .filter(template => template.classId === classIdForStep2).length;
+                                    const availableSubjects = subjectsAvailableForClass(
+                                        templatesForStep2,
+                                        classIdForStep2,
+                                        allSubjects,
+                                        assignedSubjectIds,
                                     );
-                                    
-                                    // Debug logging
-                                    if (import.meta.env.DEV) {
-                                        console.log('Subjects for dropdown (Step 2):', {
-                                            classIdForStep2,
-                                            classTemplateSubjectIds: classTemplateSubjectIds.length,
-                                            assignedSubjectIds: assignedSubjectIds.length,
-                                            availableSubjects: availableSubjects.length
-                                        });
-                                    }
+                                    const subjectsLoadingForStep2 = allSubjectsLoading || step2TemplatesLoadingState;
                                     
                                     return (
-                                        <Select value={field.value || undefined} onValueChange={field.onChange} disabled={allSubjectsLoading || allSubjects.length === 0 || !classIdForStep2}>
+                                        <Select value={field.value || undefined} onValueChange={field.onChange} disabled={subjectsLoadingForStep2 || !classIdForStep2}>
                                             <SelectTrigger>
                                                 <SelectValue                                                 placeholder={
                                                     !classIdForStep2
                                                         ? t('academic.subjects.selectClassFirst')
-                                                        : allSubjectsLoading 
+                                                        : subjectsLoadingForStep2 
                                                         ? t('academic.subjects.loadingSubjects')
-                                                        : allSubjects.length === 0
-                                                        ? t('academic.subjects.noSubjectsAvailable')
-                                                        : classTemplateSubjectIds.length === 0
+                                                        : classTemplateCount === 0
                                                         ? t('academic.subjects.noSubjectsInStep1')
                                                         : availableSubjects.length === 0 
                                                         ? t('academic.subjects.allSubjectsAssigned')
@@ -1329,15 +1382,11 @@ export function SubjectsManagement() {
                                                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
                                                         {t('academic.subjects.selectClassFirstMessage')}
                                                     </div>
-                                                ) : allSubjectsLoading ? (
+                                                ) : subjectsLoadingForStep2 ? (
                                                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
                                                         {t('academic.subjects.loadingSubjects')}
                                                     </div>
-                                                ) : allSubjects.length === 0 ? (
-                                                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                                        {t('academic.subjects.noSubjectsAvailable')}
-                                                    </div>
-                                                ) : classTemplateSubjectIds.length === 0 ? (
+                                                ) : classTemplateCount === 0 ? (
                                                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
                                                         {t('academic.subjects.noSubjectsInStep1Message')}
                                                     </div>
@@ -1420,7 +1469,7 @@ export function SubjectsManagement() {
                     <form onSubmit={handleSubmitBulk(onSubmitBulkAssign)} className="space-y-4">
                         <div className="space-y-2">
                             <Label>{t('academic.subjects.selectSubjects')} *</Label>
-                            {allSubjectsLoading ? (
+                            {allSubjectsLoading || step2TemplatesLoadingState ? (
                                 <div className="border rounded-md p-4 text-center text-muted-foreground">
                                     {t('academic.subjects.loadingSubjects')}
                                 </div>
@@ -1428,27 +1477,18 @@ export function SubjectsManagement() {
                                 <>
                                     <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
                                         {(() => {
-                                            // Get class_id from selectedClassAcademicYearId
-                                            const selectedClassAcademicYear = classAcademicYears?.find(cay => cay.id === selectedClassAcademicYearId);
-                                            const classIdForStep2 = selectedClassAcademicYear?.classId;
-                                            
-                                            // Get subjects assigned to this class in Step 1 (from class-subject-templates)
-                                            const classTemplateSubjectIds = classSubjectTemplates
-                                                ?.filter(template => template.classId === classIdForStep2)
-                                                .map(template => template.subjectId) || [];
-                                            
-                                            // Filter out already assigned subjects (from class-subjects)
-                                            const assignedSubjectIds = classSubjects?.map(cs => cs.subjectId) || [];
-                                            
-                                            // Only show subjects that:
-                                            // 1. Are active
-                                            // 2. Are assigned to the class in Step 1 (class-subject-templates)
-                                            // 3. Are not already assigned to this class instance (class-subjects)
-                                            const availableSubjects = allSubjects.filter(s => 
-                                                s.isActive && 
-                                                classTemplateSubjectIds.includes(s.id) &&
-                                                !assignedSubjectIds.includes(s.id)
-                                            );
+                                    const classIdForStep2 = step2ClassId;
+                                    const classTemplateSubjectIds = (templatesForStep2 ?? [])
+                                        .filter(template => template.classId === classIdForStep2)
+                                        .map(template => template.subjectId);
+                                    const assignedSubjectIds = classSubjects?.map(cs => cs.subjectId) || [];
+                                    // Step 2 only offers subjects already on the class template (step 1).
+                                    const availableSubjects = subjectsAvailableForClass(
+                                        templatesForStep2,
+                                        classIdForStep2,
+                                        allSubjects,
+                                        assignedSubjectIds,
+                                    );
                                             
                                             if (!classIdForStep2) {
                                                 return (

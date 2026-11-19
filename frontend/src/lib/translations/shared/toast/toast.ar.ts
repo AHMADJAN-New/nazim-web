@@ -111,7 +111,13 @@ export default {
       sessionClosed: "تم إغلاق جلسة الحضور بنجاح",
       sessionCreated: "تم إنشاء جلسة الحضور بنجاح",
       sessionDeleted: "تم حذف جلسة الحضور بنجاح",
-      sessionUpdated: "تم تحديث جلسة الحضور بنجاح"
+      sessionUpdated: "تم تحديث جلسة الحضور بنجاح",
+      groupCreated: "تم إنشاء مجموعة الحضور",
+      groupUpdated: "تم تحديث مجموعة الحضور",
+      groupDeleted: "تم حذف مجموعة الحضور",
+      groupCreateFailed: "فشل إنشاء مجموعة الحضور",
+      groupUpdateFailed: "فشل تحديث مجموعة الحضور",
+      groupDeleteFailed: "فشل حذف مجموعة الحضور"
     },
     courseClosed: "تم إغلاق الدورة",
     courseDeleted: "تم حذف الدورة",

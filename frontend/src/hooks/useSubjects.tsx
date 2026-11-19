@@ -27,64 +27,157 @@ import type { PaginatedResponse, PaginationMeta } from '@/types/pagination';
 // Re-export domain types for convenience
 export type { Subject, ClassSubject, ClassSubjectTemplate } from '@/types/domain/subject';
 
-export const useSubjects = (organizationId?: string, usePaginated?: boolean) => {
+type SubjectListParams = {
+    organization_id?: string;
+    page?: number;
+    per_page?: number;
+    all?: boolean;
+    search?: string;
+};
+
+function isPaginatedSubjectResponse(value: unknown): value is {
+    data: SubjectApi.Subject[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    from: number | null;
+    to: number | null;
+    total: number;
+    path?: string;
+    first_page_url?: string;
+    last_page_url?: string;
+    next_page_url?: string | null;
+    prev_page_url?: string | null;
+} {
+    return !!value
+        && typeof value === 'object'
+        && 'data' in value
+        && 'current_page' in value
+        && Array.isArray((value as { data: unknown }).data);
+}
+
+/**
+ * Load every subject for the current organization and school.
+ * Sends all=1 so the request is not limited to the subjects table page.
+ * If the API still returns a paginator, the remaining pages are fetched.
+ */
+export async function fetchAllSubjects(organizationId?: string, search?: string): Promise<Subject[]> {
+    const params: SubjectListParams = { all: true };
+    if (organizationId) {
+        params.organization_id = organizationId;
+    }
+    const trimmedSearch = search?.trim();
+    if (trimmedSearch) {
+        params.search = trimmedSearch;
+    }
+
+    const first = await subjectsApi.list(params);
+    if (Array.isArray(first)) {
+        return (first as SubjectApi.Subject[]).map(mapSubjectApiToDomain);
+    }
+
+    if (!isPaginatedSubjectResponse(first)) {
+        return [];
+    }
+
+    const pages = [first.data];
+    const lastPage = first.last_page ?? 1;
+    for (let page = 2; page <= lastPage; page += 1) {
+        const next = await subjectsApi.list({
+            ...params,
+            page,
+            per_page: first.per_page,
+        });
+        if (isPaginatedSubjectResponse(next)) {
+            pages.push(next.data);
+        } else if (Array.isArray(next)) {
+            pages.push(next as SubjectApi.Subject[]);
+        }
+    }
+
+    return pages.flat().map(mapSubjectApiToDomain);
+}
+
+export const useAllSubjects = (organizationId?: string) => {
+    const { user, profile } = useAuth();
+
+    return useQuery<Subject[]>({
+        queryKey: [
+            'subjects',
+            'all',
+            organizationId || profile?.organization_id,
+            profile?.default_school_id ?? null,
+        ],
+        queryFn: async () => {
+            if (!user || !profile?.organization_id || !profile.default_school_id) return [];
+            return fetchAllSubjects(organizationId || profile.organization_id);
+        },
+        enabled: !!user && !!profile?.organization_id && !!profile.default_school_id,
+        staleTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+    });
+};
+
+export const useSubjects = (organizationId?: string, usePaginated?: boolean, search?: string) => {
     const { user, profile } = useAuth();
     const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
     const { page, pageSize, setPage, setPageSize, updateFromMeta, paginationState } = usePagination({
         initialPage: 1,
         initialPageSize: 25,
     });
+    const searchTerm = search?.trim() ?? '';
 
     const { data, isLoading, error } = useQuery<Subject[] | PaginatedResponse<SubjectApi.Subject>>({
         queryKey: [
             'subjects',
+            usePaginated ? 'page' : 'all',
             organizationId || profile?.organization_id,
             orgIds.join(','),
             profile?.default_school_id ?? null,
-            usePaginated ? page : undefined,
-            usePaginated ? pageSize : undefined,
+            usePaginated ? page : 'all',
+            usePaginated ? pageSize : 'all',
+            usePaginated ? searchTerm : '',
         ],
         queryFn: async () => {
             if (!user || !profile || orgsLoading) return [];
 
-            // Use Laravel API
-            const params: { organization_id?: string; page?: number; per_page?: number } = {};
+            if (!usePaginated) {
+                return fetchAllSubjects(organizationId || profile.organization_id);
+            }
+
+            const params: SubjectListParams = {
+                page,
+                per_page: pageSize,
+            };
             if (organizationId) {
                 params.organization_id = organizationId;
             }
-
-            // Add pagination params if using pagination
-            if (usePaginated) {
-                params.page = page;
-                params.per_page = pageSize;
+            if (searchTerm) {
+                params.search = searchTerm;
             }
 
             const apiSubjects = await subjectsApi.list(params);
 
             // Check if response is paginated (Laravel returns meta fields directly, not nested)
-            if (usePaginated && apiSubjects && typeof apiSubjects === 'object' && 'data' in apiSubjects && 'current_page' in apiSubjects) {
-                // Laravel's paginated response has data and meta fields at the same level
-                const paginatedResponse = apiSubjects as any;
-                // Map API models to domain models
-                const subjects = (paginatedResponse.data as SubjectApi.Subject[]).map(mapSubjectApiToDomain);
-                // Extract meta from Laravel's response structure
+            if (isPaginatedSubjectResponse(apiSubjects)) {
+                const subjects = apiSubjects.data.map(mapSubjectApiToDomain);
                 const meta: PaginationMeta = {
-                    current_page: paginatedResponse.current_page,
-                    from: paginatedResponse.from,
-                    last_page: paginatedResponse.last_page,
-                    per_page: paginatedResponse.per_page,
-                    to: paginatedResponse.to,
-                    total: paginatedResponse.total,
-                    path: paginatedResponse.path,
-                    first_page_url: paginatedResponse.first_page_url,
-                    last_page_url: paginatedResponse.last_page_url,
-                    next_page_url: paginatedResponse.next_page_url,
-                    prev_page_url: paginatedResponse.prev_page_url,
+                    current_page: apiSubjects.current_page,
+                    from: apiSubjects.from,
+                    last_page: apiSubjects.last_page,
+                    per_page: apiSubjects.per_page,
+                    to: apiSubjects.to,
+                    total: apiSubjects.total,
+                    path: apiSubjects.path,
+                    first_page_url: apiSubjects.first_page_url,
+                    last_page_url: apiSubjects.last_page_url,
+                    next_page_url: apiSubjects.next_page_url,
+                    prev_page_url: apiSubjects.prev_page_url,
                 };
                 return { data: subjects, meta } as PaginatedResponse<SubjectApi.Subject>;
             }
 
-            // Map API models to domain models (non-paginated)
             return (apiSubjects as SubjectApi.Subject[]).map(mapSubjectApiToDomain);
         },
         enabled: !!user && !!profile && !!profile.default_school_id,
@@ -774,7 +867,7 @@ export const useClassSubjectTemplates = (classId?: string, organizationId?: stri
             const apiTemplates = await classSubjectTemplatesApi.list(params);
             return (apiTemplates as SubjectApi.ClassSubjectTemplate[]).map(mapClassSubjectTemplateApiToDomain);
         },
-        enabled: !!user && !!profile && (!!classId || !!organizationId || !!profile.organization_id),
+        enabled: !!user && !!profile && !!profile.default_school_id && !!classId && !orgsLoading,
         staleTime: 10 * 60 * 1000,
         gcTime: 30 * 60 * 1000,
     });

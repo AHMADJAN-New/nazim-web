@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -12,9 +13,11 @@ class CourseAttendanceSession extends Model
     use HasFactory, SoftDeletes;
 
     protected $connection = 'pgsql';
+
     protected $table = 'course_attendance_sessions';
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [
@@ -22,6 +25,7 @@ class CourseAttendanceSession extends Model
         'organization_id',
         'school_id',
         'course_id',
+        'attendance_group_id',
         'session_date',
         'session_title',
         'method',
@@ -59,6 +63,11 @@ class CourseAttendanceSession extends Model
     public function course()
     {
         return $this->belongsTo(ShortTermCourse::class, 'course_id');
+    }
+
+    public function attendanceGroup(): BelongsTo
+    {
+        return $this->belongsTo(CourseAttendanceGroup::class, 'attendance_group_id')->withTrashed();
     }
 
     public function records()

@@ -110,7 +110,13 @@ export default {
       sessionClosed: "Attendance session closed successfully",
       sessionCreated: "Attendance session created successfully",
       sessionDeleted: "Attendance session deleted successfully",
-      sessionUpdated: "Attendance session updated successfully"
+      sessionUpdated: "Attendance session updated successfully",
+      groupCreated: "Attendance group created",
+      groupUpdated: "Attendance group updated",
+      groupDeleted: "Attendance group deleted",
+      groupCreateFailed: "Failed to create attendance group",
+      groupUpdateFailed: "Failed to update attendance group",
+      groupDeleteFailed: "Failed to delete attendance group"
     },
     courseClosed: "Course closed",
     courseDeleted: "Course deleted",

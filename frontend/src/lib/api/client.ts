@@ -2753,6 +2753,9 @@ export const subjectsApi = {
     organization_id?: string;
     page?: number;
     per_page?: number;
+    /** When true, return the full school catalog and ignore page/per_page. */
+    all?: boolean;
+    search?: string;
   }) => {
     return apiClient.get('/subjects', params);
   },
@@ -3294,6 +3297,28 @@ export const courseStudentDisciplineRecordsApi = {
   resolve: async (id: string) => apiClient.post(`/course-student-discipline-records/${id}/resolve`),
 };
 
+// Course Attendance Groups API
+export const courseAttendanceGroupsApi = {
+  list: async (params: { course_id: string }) =>
+    apiClient.get('/course-attendance-groups', params),
+
+  create: async (data: {
+    course_id: string;
+    name: string;
+    description?: string | null;
+    student_ids: string[];
+  }) => apiClient.post('/course-attendance-groups', data),
+
+  update: async (id: string, data: {
+    name?: string;
+    description?: string | null;
+    is_active?: boolean;
+    student_ids?: string[];
+  }) => apiClient.put(`/course-attendance-groups/${id}`, data),
+
+  delete: async (id: string) => apiClient.delete(`/course-attendance-groups/${id}`),
+};
+
 // Course Attendance Sessions API
 export const courseAttendanceSessionsApi = {
   list: async (params?: {
@@ -3310,6 +3335,7 @@ export const courseAttendanceSessionsApi = {
 
   create: async (data: {
     course_id: string;
+    attendance_group_id?: string | null;
     session_date: string;
     session_title?: string | null;
     method?: string;
@@ -3629,6 +3655,37 @@ export const examsApi = {
   ) => {
     return apiClient.post<{ id: string; status: string; message?: string }>(
       `/exams/${examId}/reports/students/export/pdf`,
+      data
+    );
+  },
+
+  combinedStudentReports: async (
+    examId: string,
+    params: {
+      second_exam_id: string;
+      exam_student_ids: string[];
+      language?: string;
+      calendar_preference?: string;
+    }
+  ) => {
+    return apiClient.get<{ cards: unknown[] }>(
+      `/exams/${examId}/reports/students/combined`,
+      params
+    );
+  },
+
+  exportCombinedStudentReportCardsPdf: async (
+    examId: string,
+    data: {
+      second_exam_id: string;
+      exam_student_ids: string[];
+      language?: string;
+      calendar_preference?: string;
+      branding_id?: string;
+    }
+  ) => {
+    return apiClient.post<{ id: string; status: string; message?: string }>(
+      `/exams/${examId}/reports/students/combined/export/pdf`,
       data
     );
   },
@@ -3993,13 +4050,15 @@ export const examTimesApi = {
 
   create: async (examId: string, data: {
     exam_class_id: string;
-    exam_subject_id: string;
+    exam_subject_id?: string;
+    class_subject_id?: string;
     date: string;
     start_time: string;
     end_time: string;
     room_id?: string | null;
     invigilator_id?: string | null;
     notes?: string | null;
+    sort_order?: number;
   }) => {
     return apiClient.post(`/exams/${examId}/times`, data);
   },
@@ -4023,6 +4082,9 @@ export const examTimesApi = {
   },
 
   update: async (id: string, data: {
+    exam_class_id?: string;
+    exam_subject_id?: string;
+    class_subject_id?: string;
     date?: string;
     start_time?: string;
     end_time?: string;
@@ -4030,8 +4092,14 @@ export const examTimesApi = {
     invigilator_id?: string | null;
     notes?: string | null;
     is_locked?: boolean;
+    sort_order?: number;
+    sync_slot?: boolean;
   }) => {
     return apiClient.put(`/exam-times/${id}`, data);
+  },
+
+  reorder: async (examId: string, data: { exam_time_ids: string[] }) => {
+    return apiClient.post(`/exams/${examId}/times/reorder`, data);
   },
 
   delete: async (id: string) => {

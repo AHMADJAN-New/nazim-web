@@ -71,6 +71,7 @@ export interface ExamTime {
   room_id?: string | null;
   invigilator_id?: string | null;
   notes?: string | null;
+  sort_order?: number;
   is_locked: boolean;
   created_at: string;
   updated_at: string;
@@ -93,16 +94,21 @@ export interface ExamTime {
 
 export interface ExamTimeInsert {
   exam_class_id: string;
-  exam_subject_id: string;
+  exam_subject_id?: string;
+  class_subject_id?: string;
   date: string;
   start_time: string;
   end_time: string;
   room_id?: string | null;
   invigilator_id?: string | null;
   notes?: string | null;
+  sort_order?: number;
 }
 
 export interface ExamTimeUpdate {
+  exam_class_id?: string;
+  exam_subject_id?: string;
+  class_subject_id?: string;
   date?: string;
   start_time?: string;
   end_time?: string;
@@ -110,6 +116,8 @@ export interface ExamTimeUpdate {
   invigilator_id?: string | null;
   notes?: string | null;
   is_locked?: boolean;
+  sort_order?: number;
+  sync_slot?: boolean;
 }
 
 export interface ExamReportSubject {

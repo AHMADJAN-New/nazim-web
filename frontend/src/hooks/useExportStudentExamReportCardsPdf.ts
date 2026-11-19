@@ -7,6 +7,27 @@ import { examsApi, apiClient, sanitizeBrowserDownloadFilename } from '@/lib/api/
 import { getReportLocaleOptions } from '@/lib/reporting/reportLocaleOptions';
 import type { ReportStatus } from '@/lib/reporting/serverReportTypes';
 import { showToast } from '@/lib/toast';
+import type { TranslationKey } from '@/lib/translations/keys.generated';
+
+export function translateCombinedExamError(
+  message: string | undefined,
+  t: (key: TranslationKey) => string,
+): string | undefined {
+  switch (message) {
+    case 'combined_exam.academic_year_mismatch':
+      return t('studentReportCard.crossYearRejected');
+    case 'combined_exam.class_not_shared':
+      return t('studentReportCard.crossClassRejected');
+    case 'combined_exam.same_exam':
+      return t('studentReportCard.sameExamRejected');
+    case 'combined_exam.mixed_classes':
+      return t('studentReportCard.mixedClassesRejected');
+    case 'combined_exam.out_of_scope':
+      return t('studentReportCard.outOfScopeRejected');
+    default:
+      return message;
+  }
+}
 
 /**
  * Export student exam report cards as a branded PDF (server-side),
@@ -145,14 +166,25 @@ export function useExportStudentExamReportCardsPdf() {
   const mutation = useMutation({
     mutationFn: async ({
       examId,
+      secondExamId,
       examStudentIds,
       brandingId,
     }: {
       examId: string;
+      secondExamId?: string;
       examStudentIds: string[];
       brandingId?: string;
     }) => {
       const locale = getReportLocaleOptions(language);
+      if (secondExamId) {
+        return examsApi.exportCombinedStudentReportCardsPdf(examId, {
+          second_exam_id: secondExamId,
+          exam_student_ids: examStudentIds,
+          language: locale.language,
+          calendar_preference: locale.calendarPreference,
+          branding_id: brandingId,
+        });
+      }
       return examsApi.exportStudentReportCardsPdf(examId, {
         exam_student_ids: examStudentIds,
         language: locale.language,
@@ -177,8 +209,10 @@ export function useExportStudentExamReportCardsPdf() {
     },
     onError: (err: Error) => {
       setStatus('failed');
-      setError(err.message);
-      showToast.error(err.message || t('toast.reportGenerationFailed') || 'Failed to generate report');
+      const message = translateCombinedExamError(err.message, t)
+        || t('toast.reportGenerationFailed');
+      setError(message);
+      showToast.error(message);
     },
   });
 

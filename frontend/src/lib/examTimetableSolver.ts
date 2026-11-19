@@ -53,6 +53,7 @@ export interface ExamSolverEntry {
   isLocked: boolean;
   subjectName?: string;
   className?: string;
+  sortOrder?: number;
 }
 
 export interface ExamSolverResult {

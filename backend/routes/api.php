@@ -14,6 +14,8 @@ use App\Http\Controllers\CertificateTemplateController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\ClassSubjectController;
 use App\Http\Controllers\ClassSubjectTemplateController;
+use App\Http\Controllers\CombinedExamResultCardController;
+use App\Http\Controllers\CourseAttendanceGroupController;
 use App\Http\Controllers\CourseAttendanceSessionController;
 use App\Http\Controllers\CourseDocumentController;
 use App\Http\Controllers\CourseStudentController;
@@ -892,6 +894,7 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::middleware(['subscription:write'])->group(function () {
                 Route::post('/exams/{exam}/times', [ExamTimeController::class, 'store']);
                 Route::post('/exams/{exam}/times/bulk-replace', [ExamTimeController::class, 'bulkReplace']);
+                Route::post('/exams/{exam}/times/reorder', [ExamTimeController::class, 'reorder']);
                 Route::put('/exam-times/{examTime}', [ExamTimeController::class, 'update']);
                 Route::delete('/exam-times/{examTime}', [ExamTimeController::class, 'destroy']);
                 Route::post('/exam-times/{examTime}/toggle-lock', [ExamTimeController::class, 'toggleLock']);
@@ -928,6 +931,8 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             Route::get('/exams/{exam}/reports/summary', [ExamReportController::class, 'summary']);
             Route::get('/exams/{exam}/reports/classes/{class}', [ExamReportController::class, 'classReport']);
             Route::post('/exams/{exam}/reports/students/export/pdf', [ExamReportController::class, 'exportStudentReportCardsPdf']);
+            Route::get('/exams/{exam}/reports/students/combined', [CombinedExamResultCardController::class, 'index']);
+            Route::post('/exams/{exam}/reports/students/combined/export/pdf', [CombinedExamResultCardController::class, 'exportPdf']);
             Route::get('/exams/{exam}/reports/students/{student}', [ExamReportController::class, 'studentReport']);
             Route::get('/exams/{exam}/reports/classes/{class}/consolidated', [ExamReportController::class, 'consolidatedClassReport']);
             Route::get('/exams/{exam}/reports/classes/{class}/subjects/{subject}', [ExamReportController::class, 'classSubjectMarkSheet']);
@@ -1278,8 +1283,15 @@ Route::middleware(['auth:sanctum', 'organization', 'subscription:read'])->group(
             });
         });
 
-        // Course Attendance Sessions (requires short_courses feature)
+        // Course Attendance Groups and Sessions (requires short_courses feature)
         Route::middleware(['feature:short_courses'])->group(function () {
+            Route::get('/course-attendance-groups', [CourseAttendanceGroupController::class, 'index']);
+            Route::middleware(['subscription:write'])->group(function () {
+                Route::post('/course-attendance-groups', [CourseAttendanceGroupController::class, 'store']);
+                Route::put('/course-attendance-groups/{id}', [CourseAttendanceGroupController::class, 'update']);
+                Route::delete('/course-attendance-groups/{id}', [CourseAttendanceGroupController::class, 'destroy']);
+            });
+
             Route::get('/course-attendance-sessions/roster', [CourseAttendanceSessionController::class, 'roster']);
             Route::get('/course-attendance-sessions/report', [CourseAttendanceSessionController::class, 'report']);
             Route::get('/course-attendance-sessions/{id}/session-report', [CourseAttendanceSessionController::class, 'sessionReport']);

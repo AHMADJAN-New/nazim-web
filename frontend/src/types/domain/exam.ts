@@ -68,6 +68,7 @@ export interface ExamTime {
   roomId?: string | null;
   invigilatorId?: string | null;
   notes?: string | null;
+  sortOrder?: number;
   isLocked: boolean;
   createdAt: Date;
   updatedAt: Date;

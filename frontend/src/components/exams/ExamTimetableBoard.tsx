@@ -134,11 +134,21 @@ export function ExamTimetableBoard({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  const entryByKey = useMemo(() => {
-    const map = new Map<string, { entry: ExamSolverEntry; index: number }>();
+  const entriesByCell = useMemo(() => {
+    const map = new Map<string, { entry: ExamSolverEntry; index: number }[]>();
     entries.forEach((entry, index) => {
-      map.set(`${entry.examClassId}|${entry.date}`, { entry, index });
+      const key = `${entry.examClassId}|${entry.date}`;
+      const list = map.get(key) ?? [];
+      list.push({ entry, index });
+      map.set(key, list);
     });
+    for (const list of map.values()) {
+      list.sort((a, b) => {
+        const byTime = a.entry.startTime.localeCompare(b.entry.startTime);
+        if (byTime !== 0) return byTime;
+        return (a.entry.sortOrder ?? 0) - (b.entry.sortOrder ?? 0);
+      });
+    }
     return map;
   }, [entries]);
 
@@ -274,25 +284,28 @@ export function ExamTimetableBoard({
                     {allDays.map((day) => {
                       const isRest = restSet.has(day);
                       const cellId = `cell-${cls.id}|${day}`;
-                      const found = entryByKey.get(`${cls.id}|${day}`);
+                      const cellEntries = entriesByCell.get(`${cls.id}|${day}`) ?? [];
                       return (
                         <DroppableCell key={cellId} id={cellId} isRest={isRest}>
-                          {found && (
-                            <DraggableChip
-                              id={`entry-${found.index}`}
-                              disabled={disabled || found.entry.isLocked}
-                            >
-                              <div className="font-medium truncate flex items-center gap-1">
-                                {found.entry.subjectName || found.entry.subjectId}
-                                {found.entry.isLocked && (
-                                  <Lock className="h-3 w-3 text-muted-foreground" />
-                                )}
-                              </div>
-                              <div className="text-muted-foreground">
-                                {found.entry.startTime.slice(0, 5)}–{found.entry.endTime.slice(0, 5)}
-                              </div>
-                            </DraggableChip>
-                          )}
+                          <div className="flex flex-col gap-1">
+                            {cellEntries.map((found) => (
+                              <DraggableChip
+                                key={found.index}
+                                id={`entry-${found.index}`}
+                                disabled={disabled || found.entry.isLocked}
+                              >
+                                <div className="font-medium truncate flex items-center gap-1">
+                                  {found.entry.subjectName || found.entry.subjectId}
+                                  {found.entry.isLocked && (
+                                    <Lock className="h-3 w-3 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <div className="text-muted-foreground">
+                                  {found.entry.startTime.slice(0, 5)}–{found.entry.endTime.slice(0, 5)}
+                                </div>
+                              </DraggableChip>
+                            ))}
+                          </div>
                         </DroppableCell>
                       );
                     })}

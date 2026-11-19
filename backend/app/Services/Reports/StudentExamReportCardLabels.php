@@ -19,7 +19,22 @@ class StudentExamReportCardLabels
             $lang = 'fa';
         }
 
-        return $maps[$lang] ?? $maps['en'];
+        $base = $maps[$lang] ?? $maps['en'];
+
+        return array_merge($base, self::combinedMaps()[$lang] ?? self::combinedMaps()['en']);
+    }
+
+    public static function combinedReportTitle(string $language, ?string $examAName = null, ?string $examBName = null): string
+    {
+        $labels = self::forLanguage($language);
+        $title = $labels['combinedReportTitle'];
+        $names = array_values(array_filter([$examAName, $examBName], fn ($name) => is_string($name) && $name !== ''));
+
+        if ($names === []) {
+            return $title;
+        }
+
+        return $title.' - '.implode(' + ', $names);
     }
 
     public static function isRtl(string $language): bool
@@ -202,6 +217,77 @@ class StudentExamReportCardLabels
                 'parent' => 'ولي الأمر',
                 'dateIssued' => 'تاريخ الإصدار',
                 'studentPhoto' => 'صورة الطالب',
+            ],
+        ];
+    }
+
+    /**
+     * Labels used only by the two-exam combined result card.
+     *
+     * @return array<string, array<string, string>>
+     */
+    private static function combinedMaps(): array
+    {
+        return [
+            'en' => [
+                'combinedReportTitle' => 'Combined result card',
+                'examA' => 'Exam A',
+                'examB' => 'Exam B',
+                'passingMark' => 'Passing mark',
+                'combined' => 'Combined',
+                'combinedTotal' => 'Combined total',
+                'combinedPassingMark' => 'Combined passing mark',
+                'missingMark' => 'Missing mark',
+                'notInExam' => 'Not in this exam',
+                'incompleteCombined' => 'Incomplete — combined total is not final',
+                'notEnrolledSecond' => 'This student is not enrolled in the second exam, so the combined total is incomplete.',
+                'formulaHint' => 'Combined total = sum of the two exams’ total marks. Combined passing mark = sum of the two exams’ passing marks. A missing or absent mark is not added into a combined score.',
+                'subjectsIncomplete' => 'Incomplete subjects',
+            ],
+            'ps' => [
+                'combinedReportTitle' => 'ګډ راپور کارت',
+                'examA' => 'لومړۍ ازموینه',
+                'examB' => 'دویمه ازموینه',
+                'passingMark' => 'د کامیابۍ نمره',
+                'combined' => 'ګډ',
+                'combinedTotal' => 'ګډ ټولټال',
+                'combinedPassingMark' => 'ګډه د کامیابۍ نمره',
+                'missingMark' => 'نمره نشته',
+                'notInExam' => 'په دې ازموینه کې نشته',
+                'incompleteCombined' => 'نیمګړی — ګډ ټولټال وروستی نه دی',
+                'notEnrolledSecond' => 'دا زده کوونکی په دویمه ازموینه کې شامل نه دی، نو ګډ ټولټال نیمګړی دی.',
+                'formulaHint' => 'ګډ ټولټال = د دواړو ازموینو د ټولو نمرو مجموعه. ګډه د کامیابۍ نمره = د دواړو ازموینو د کامیابۍ نمرو مجموعه. نشتې یا غیر حاضره نمره په ګډه نمره کې نه جمع کېږي.',
+                'subjectsIncomplete' => 'نیمګړي مضامین',
+            ],
+            'fa' => [
+                'combinedReportTitle' => 'کارت نتیجه ترکیبی',
+                'examA' => 'امتحان اول',
+                'examB' => 'امتحان دوم',
+                'passingMark' => 'نمره کامیابی',
+                'combined' => 'ترکیبی',
+                'combinedTotal' => 'مجموع ترکیبی',
+                'combinedPassingMark' => 'نمره کامیابی ترکیبی',
+                'missingMark' => 'نمره موجود نیست',
+                'notInExam' => 'در این امتحان نیست',
+                'incompleteCombined' => 'ناتمام — مجموع ترکیبی نهایی نیست',
+                'notEnrolledSecond' => 'این شاگرد در امتحان دوم شامل نیست، بنابراین مجموع ترکیبی ناتمام است.',
+                'formulaHint' => 'مجموع ترکیبی = جمع نمرات کامل هر دو امتحان. نمره کامیابی ترکیبی = جمع نمرات کامیابی هر دو امتحان. نمره غایب یا ثبت‌نشده در نمره ترکیبی جمع نمی‌شود.',
+                'subjectsIncomplete' => 'مضامین ناتمام',
+            ],
+            'ar' => [
+                'combinedReportTitle' => 'بطاقة النتيجة المجمعة',
+                'examA' => 'الامتحان الأول',
+                'examB' => 'الامتحان الثاني',
+                'passingMark' => 'درجة النجاح',
+                'combined' => 'المجمّع',
+                'combinedTotal' => 'المجموع المجمّع',
+                'combinedPassingMark' => 'درجة النجاح المجمّعة',
+                'missingMark' => 'درجة غير مسجلة',
+                'notInExam' => 'غير موجود في هذا الامتحان',
+                'incompleteCombined' => 'غير مكتمل — المجموع المجمّع ليس نهائياً',
+                'notEnrolledSecond' => 'هذا الطالب غير مسجل في الامتحان الثاني، لذلك المجموع المجمّع غير مكتمل.',
+                'formulaHint' => 'المجموع المجمّع = مجموع درجات الامتحانين الكاملة. درجة النجاح المجمّعة = مجموع درجتي النجاح. الدرجة الغائبة أو غير المسجلة لا تُضاف إلى الدرجة المجمّعة.',
+                'subjectsIncomplete' => 'مواد غير مكتملة',
             ],
         ];
     }

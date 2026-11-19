@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClassSubject;
 use App\Models\Exam;
 use App\Models\ExamClass;
 use App\Models\ExamSubject;
@@ -86,6 +87,7 @@ class ExamTimeController extends Controller
 
         $examTimes = $query->orderBy('date', 'asc')
             ->orderBy('start_time', 'asc')
+            ->orderBy('sort_order', 'asc')
             ->get();
 
         return response()->json($examTimes);
@@ -138,16 +140,24 @@ class ExamTimeController extends Controller
             ], 422);
         }
 
+        $this->normalizeClockFields($request);
+
         $validated = $request->validate([
             'exam_class_id' => 'required|uuid|exists:exam_classes,id',
-            'exam_subject_id' => 'required|uuid|exists:exam_subjects,id',
+            'exam_subject_id' => 'nullable|uuid|exists:exam_subjects,id',
+            'class_subject_id' => 'nullable|uuid|exists:class_subjects,id',
             'date' => 'required|date',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
             'room_id' => 'nullable|uuid|exists:rooms,id',
             'invigilator_id' => 'nullable|uuid|exists:staff,id',
             'notes' => 'nullable|string|max:1000',
+            'sort_order' => 'nullable|integer|min:0|max:10000',
         ]);
+
+        if (empty($validated['exam_subject_id']) && empty($validated['class_subject_id'])) {
+            return response()->json(['error' => 'A class subject is required'], 422);
+        }
 
         // Verify exam_class belongs to this exam
         $examClass = ExamClass::where('id', $validated['exam_class_id'])
@@ -161,18 +171,20 @@ class ExamTimeController extends Controller
             return response()->json(['error' => 'Exam class does not belong to this exam'], 422);
         }
 
-        // Verify exam_subject belongs to this exam_class
-        $examSubject = ExamSubject::where('id', $validated['exam_subject_id'])
-            ->where('exam_id', $examId)
-            ->where('exam_class_id', $validated['exam_class_id'])
-            ->where('organization_id', $profile->organization_id)
-            ->where('school_id', $currentSchoolId)
-            ->whereNull('deleted_at')
-            ->first();
+        $examSubject = $this->resolveExamSubject(
+            $exam,
+            $examClass,
+            $profile->organization_id,
+            $currentSchoolId,
+            $validated['exam_subject_id'] ?? null,
+            $validated['class_subject_id'] ?? null,
+        );
 
-        if (! $examSubject) {
-            return response()->json(['error' => 'Exam subject does not belong to this exam class'], 422);
+        if ($examSubject instanceof \Illuminate\Http\JsonResponse) {
+            return $examSubject;
         }
+
+        $validated['exam_subject_id'] = $examSubject->id;
 
         // Validate date is within exam period
         if (! $exam->isDateWithinPeriod($validated['date'])) {
@@ -190,20 +202,16 @@ class ExamTimeController extends Controller
             return response()->json(['error' => 'End time must be after start time'], 422);
         }
 
-        // Check for room conflicts if room is specified
         if (! empty($validated['room_id'])) {
-            $roomConflict = ExamTime::where('organization_id', $profile->organization_id)
-                ->where('school_id', $currentSchoolId)
-                ->where('room_id', $validated['room_id'])
-                ->whereDate('date', $validated['date'])
-                ->whereNull('deleted_at')
-                ->where(function ($query) use ($validated) {
-                    $query->where(function ($q) use ($validated) {
-                        $q->where('start_time', '<', $validated['end_time'])
-                            ->where('end_time', '>', $validated['start_time']);
-                    });
-                })
-                ->first();
+            $roomConflict = $this->findRoomConflict(
+                $profile->organization_id,
+                $currentSchoolId,
+                $validated['room_id'],
+                $validated['date'],
+                $validated['start_time'],
+                $validated['end_time'],
+                $validated['exam_class_id'],
+            );
 
             if ($roomConflict) {
                 return response()->json([
@@ -245,6 +253,14 @@ class ExamTimeController extends Controller
             'invigilator_id' => $validated['invigilator_id'] ?? null,
             'notes' => $validated['notes'] ?? null,
             'is_locked' => false,
+            'sort_order' => $validated['sort_order'] ?? $this->nextSortOrder(
+                $profile->organization_id,
+                $currentSchoolId,
+                $validated['exam_class_id'],
+                $validated['date'],
+                $validated['start_time'],
+                $validated['end_time'],
+            ),
         ]);
 
         $examTime->load([
@@ -357,12 +373,24 @@ class ExamTimeController extends Controller
             ], 422);
         }
 
+        $oldSubjectId = $examTime->exam_subject_id;
+        $oldClassId = $examTime->exam_class_id;
+        $oldDate = $this->dateKeyFromModel($examTime->date);
+        $oldStart = $this->clockFromModel($examTime->start_time);
+        $oldEnd = $this->clockFromModel($examTime->end_time);
+
         // Capture old values before update
         $oldValues = $examTime->only([
             'date', 'start_time', 'end_time', 'room_id', 'invigilator_id', 'notes', 'is_locked',
+            'exam_class_id', 'exam_subject_id', 'sort_order',
         ]);
 
+        $this->normalizeClockFields($request);
+
         $validated = $request->validate([
+            'exam_class_id' => 'sometimes|required|uuid|exists:exam_classes,id',
+            'exam_subject_id' => 'sometimes|nullable|uuid|exists:exam_subjects,id',
+            'class_subject_id' => 'sometimes|nullable|uuid|exists:class_subjects,id',
             'date' => 'sometimes|required|date',
             'start_time' => 'sometimes|required|date_format:H:i',
             'end_time' => 'sometimes|required|date_format:H:i',
@@ -370,11 +398,55 @@ class ExamTimeController extends Controller
             'invigilator_id' => 'nullable|uuid|exists:staff,id',
             'notes' => 'nullable|string|max:1000',
             'is_locked' => 'sometimes|boolean',
+            'sort_order' => 'sometimes|integer|min:0|max:10000',
+            'sync_slot' => 'sometimes|boolean',
         ]);
 
+        $syncSlot = (bool) ($validated['sync_slot'] ?? false);
+        unset($validated['sync_slot']);
+
+        if (! $exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        $newClassId = $validated['exam_class_id'] ?? $examTime->exam_class_id;
+        $examClass = ExamClass::where('id', $newClassId)
+            ->where('exam_id', $exam->id)
+            ->where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $examClass) {
+            return response()->json(['error' => 'Exam class does not belong to this exam'], 422);
+        }
+
+        $subjectChanged = array_key_exists('exam_subject_id', $validated)
+            || array_key_exists('class_subject_id', $validated);
+        if ($subjectChanged || $newClassId !== $oldClassId) {
+            $resolved = $this->resolveExamSubject(
+                $exam,
+                $examClass,
+                $profile->organization_id,
+                $currentSchoolId,
+                $validated['exam_subject_id'] ?? ($subjectChanged ? null : $examTime->exam_subject_id),
+                $validated['class_subject_id'] ?? null,
+            );
+
+            if ($resolved instanceof \Illuminate\Http\JsonResponse) {
+                return $resolved;
+            }
+
+            $validated['exam_subject_id'] = $resolved->id;
+            $validated['exam_class_id'] = $examClass->id;
+        }
+        unset($validated['class_subject_id']);
+
         // Validate date is within exam period
-        $newDate = $validated['date'] ?? $examTime->date;
-        if ($exam && ! $exam->isDateWithinPeriod($newDate)) {
+        $newDate = isset($validated['date'])
+            ? substr((string) $validated['date'], 0, 10)
+            : $oldDate;
+        if (! $exam->isDateWithinPeriod($newDate)) {
             return response()->json([
                 'error' => 'Date must be within the exam period',
                 'exam_start_date' => $exam->start_date?->format('Y-m-d'),
@@ -382,9 +454,10 @@ class ExamTimeController extends Controller
             ], 422);
         }
 
-        // Validate time consistency
-        $startTime = $validated['start_time'] ?? $examTime->start_time;
-        $endTime = $validated['end_time'] ?? $examTime->end_time;
+        $startTime = $this->normalizeClock($validated['start_time'] ?? $oldStart);
+        $endTime = $this->normalizeClock($validated['end_time'] ?? $oldEnd);
+        $validated['start_time'] = $startTime;
+        $validated['end_time'] = $endTime;
 
         $start = \Carbon\Carbon::createFromFormat('H:i', $startTime);
         $end = \Carbon\Carbon::createFromFormat('H:i', $endTime);
@@ -392,22 +465,33 @@ class ExamTimeController extends Controller
             return response()->json(['error' => 'End time must be after start time'], 422);
         }
 
-        // Check for room conflicts if room is being set/changed
-        $newRoomId = array_key_exists('room_id', $validated) ? $validated['room_id'] : $examTime->room_id;
-        if ($newRoomId) {
-            $roomConflict = ExamTime::where('organization_id', $profile->organization_id)
+        $siblingIds = [];
+        if ($syncSlot && $newClassId === $oldClassId) {
+            $siblingIds = ExamTime::where('organization_id', $profile->organization_id)
                 ->where('school_id', $currentSchoolId)
-                ->where('room_id', $newRoomId)
-                ->whereDate('date', $newDate)
+                ->where('exam_id', $exam->id)
+                ->where('exam_class_id', $oldClassId)
+                ->whereDate('date', $oldDate)
+                ->where('start_time', $oldStart)
+                ->where('end_time', $oldEnd)
                 ->where('id', '!=', $id)
                 ->whereNull('deleted_at')
-                ->where(function ($query) use ($startTime, $endTime) {
-                    $query->where(function ($q) use ($startTime, $endTime) {
-                        $q->where('start_time', '<', $endTime)
-                            ->where('end_time', '>', $startTime);
-                    });
-                })
-                ->first();
+                ->pluck('id')
+                ->all();
+        }
+
+        $newRoomId = array_key_exists('room_id', $validated) ? $validated['room_id'] : $examTime->room_id;
+        if ($newRoomId) {
+            $roomConflict = $this->findRoomConflict(
+                $profile->organization_id,
+                $currentSchoolId,
+                $newRoomId,
+                $newDate,
+                $startTime,
+                $endTime,
+                $newClassId,
+                array_merge([$id], $siblingIds),
+            );
 
             if ($roomConflict) {
                 return response()->json([
@@ -423,6 +507,21 @@ class ExamTimeController extends Controller
 
         $examTime->fill($validated);
         $examTime->save();
+
+        if ($siblingIds !== []) {
+            ExamTime::whereIn('id', $siblingIds)
+                ->where('is_locked', false)
+                ->update([
+                    'date' => $newDate,
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
+                    'room_id' => $newRoomId,
+                    'invigilator_id' => array_key_exists('invigilator_id', $validated)
+                        ? $validated['invigilator_id']
+                        : $examTime->invigilator_id,
+                    'notes' => array_key_exists('notes', $validated) ? $validated['notes'] : $examTime->notes,
+                ]);
+        }
 
         $examTime->load([
             'examClass.classAcademicYear.class',
@@ -476,6 +575,7 @@ class ExamTimeController extends Controller
             Log::warning('Failed to log exam time update: '.$e->getMessage());
         }
 
+        $this->examSubjectScheduleService->syncExamSubject($oldSubjectId);
         $this->examSubjectScheduleService->syncExamSubject($examTime->exam_subject_id);
 
         return response()->json($examTime);
@@ -696,6 +796,8 @@ class ExamTimeController extends Controller
                 'status' => $exam->status,
             ], 422);
         }
+
+        $this->normalizeBulkTimes($request);
 
         $validated = $request->validate([
             'times' => 'present|array',
@@ -936,11 +1038,288 @@ class ExamTimeController extends Controller
             ->whereNull('deleted_at')
             ->orderBy('date', 'asc')
             ->orderBy('start_time', 'asc')
+            ->orderBy('sort_order', 'asc')
             ->get();
 
         return response()->json([
             'data' => $examTimes,
             'created_count' => count($created),
+        ]);
+    }
+
+    public function reorder(Request $request, string $examId)
+    {
+        $user = $request->user();
+        $profile = DB::table('profiles')->where('id', $user->id)->first();
+
+        if (! $profile) {
+            return response()->json(['error' => 'Profile not found'], 404);
+        }
+
+        if (! $profile->organization_id) {
+            return response()->json(['error' => 'User must be assigned to an organization'], 403);
+        }
+
+        $currentSchoolId = $this->getCurrentSchoolId($request);
+
+        try {
+            if (! $user->hasPermissionTo('exams.manage_timetable')) {
+                return response()->json(['error' => 'This action is unauthorized'], 403);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Permission check failed for exams.manage_timetable: '.$e->getMessage());
+
+            return response()->json(['error' => 'This action is unauthorized'], 403);
+        }
+
+        $exam = Exam::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('id', $examId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $exam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+
+        if ($exam->isConfigurationLocked()) {
+            return response()->json([
+                'error' => 'Cannot modify timetable for a completed or archived exam',
+                'status' => $exam->status,
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'exam_time_ids' => 'required|array|min:1',
+            'exam_time_ids.*' => 'required|uuid',
+        ]);
+
+        $ids = array_values(array_unique($validated['exam_time_ids']));
+        $rows = ExamTime::where('organization_id', $profile->organization_id)
+            ->where('school_id', $currentSchoolId)
+            ->where('exam_id', $examId)
+            ->whereIn('id', $ids)
+            ->whereNull('deleted_at')
+            ->get();
+
+        if ($rows->count() !== count($ids)) {
+            return response()->json(['error' => 'One or more time slots were not found'], 422);
+        }
+
+        if ($rows->contains(fn (ExamTime $row) => (bool) $row->is_locked)) {
+            return response()->json(['error' => 'A locked time slot cannot be reordered'], 422);
+        }
+
+        $slot = $this->slotSignature($rows->first());
+        foreach ($rows as $row) {
+            if ($this->slotSignature($row) !== $slot) {
+                return response()->json(['error' => 'Subjects can only be reordered within the same slot'], 422);
+            }
+        }
+
+        foreach ($ids as $index => $timeId) {
+            ExamTime::where('id', $timeId)->update(['sort_order' => $index]);
+        }
+
+        $examTimes = ExamTime::with([
+            'examClass.classAcademicYear.class',
+            'examSubject.subject',
+            'room',
+            'invigilator',
+        ])
+            ->whereIn('id', $ids)
+            ->orderBy('sort_order', 'asc')
+            ->get();
+
+        return response()->json(['data' => $examTimes]);
+    }
+
+    private function normalizeClock(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return $value;
+        }
+
+        if (preg_match('/^(\d{2}:\d{2})/', $value, $matches)) {
+            return $matches[1];
+        }
+
+        return $value;
+    }
+
+    private function normalizeClockFields(Request $request): void
+    {
+        $merge = [];
+        foreach (['start_time', 'end_time'] as $field) {
+            if ($request->exists($field) && is_string($request->input($field))) {
+                $merge[$field] = $this->normalizeClock($request->input($field));
+            }
+        }
+
+        if ($merge !== []) {
+            $request->merge($merge);
+        }
+    }
+
+    private function normalizeBulkTimes(Request $request): void
+    {
+        $times = $request->input('times');
+        if (! is_array($times)) {
+            return;
+        }
+
+        foreach ($times as $index => $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            foreach (['start_time', 'end_time'] as $field) {
+                if (isset($row[$field]) && is_string($row[$field])) {
+                    $times[$index][$field] = $this->normalizeClock($row[$field]);
+                }
+            }
+        }
+
+        $request->merge(['times' => $times]);
+    }
+
+    private function clockFromModel(mixed $value): string
+    {
+        if ($value instanceof \Carbon\CarbonInterface) {
+            return $value->format('H:i');
+        }
+
+        return $this->normalizeClock((string) $value) ?? '';
+    }
+
+    private function dateKeyFromModel(mixed $value): string
+    {
+        if ($value instanceof \Carbon\CarbonInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        return substr((string) $value, 0, 10);
+    }
+
+    private function slotSignature(ExamTime $examTime): string
+    {
+        return implode('|', [
+            $examTime->exam_class_id,
+            $this->dateKeyFromModel($examTime->date),
+            $this->clockFromModel($examTime->start_time),
+            $this->clockFromModel($examTime->end_time),
+        ]);
+    }
+
+    /**
+     * @param  array<int, string>  $ignoreIds
+     */
+    private function findRoomConflict(
+        string $organizationId,
+        string $schoolId,
+        string $roomId,
+        string $date,
+        string $startTime,
+        string $endTime,
+        string $examClassId,
+        array $ignoreIds = [],
+    ): ?ExamTime {
+        return ExamTime::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->where('room_id', $roomId)
+            ->whereDate('date', $date)
+            ->whereNull('deleted_at')
+            ->when($ignoreIds !== [], fn ($query) => $query->whereNotIn('id', $ignoreIds))
+            ->where('start_time', '<', $endTime)
+            ->where('end_time', '>', $startTime)
+            ->where(function ($query) use ($examClassId, $startTime, $endTime) {
+                $query->where('exam_class_id', '!=', $examClassId)
+                    ->orWhere(function ($sameClass) use ($startTime, $endTime) {
+                        $sameClass->where('start_time', '!=', $startTime)
+                            ->orWhere('end_time', '!=', $endTime);
+                    });
+            })
+            ->first();
+    }
+
+    private function nextSortOrder(
+        string $organizationId,
+        string $schoolId,
+        string $examClassId,
+        string $date,
+        string $startTime,
+        string $endTime,
+    ): int {
+        $max = ExamTime::where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->where('exam_class_id', $examClassId)
+            ->whereDate('date', $date)
+            ->where('start_time', $startTime)
+            ->where('end_time', $endTime)
+            ->whereNull('deleted_at')
+            ->max('sort_order');
+
+        return $max === null ? 0 : ((int) $max) + 1;
+    }
+
+    /**
+     * @return ExamSubject|\Illuminate\Http\JsonResponse
+     */
+    private function resolveExamSubject(
+        Exam $exam,
+        ExamClass $examClass,
+        string $organizationId,
+        string $schoolId,
+        ?string $examSubjectId,
+        ?string $classSubjectId,
+    ) {
+        if ($examSubjectId) {
+            $examSubject = ExamSubject::where('id', $examSubjectId)
+                ->where('exam_id', $exam->id)
+                ->where('exam_class_id', $examClass->id)
+                ->where('organization_id', $organizationId)
+                ->where('school_id', $schoolId)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (! $examSubject) {
+                return response()->json(['error' => 'Exam subject does not belong to this exam class'], 422);
+            }
+
+            return $examSubject;
+        }
+
+        if (! $classSubjectId) {
+            return response()->json(['error' => 'A class subject is required'], 422);
+        }
+
+        $classSubject = ClassSubject::where('id', $classSubjectId)
+            ->where('organization_id', $organizationId)
+            ->where('school_id', $schoolId)
+            ->where('class_academic_year_id', $examClass->class_academic_year_id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $classSubject) {
+            return response()->json(['error' => 'Subject must belong to the selected exam class'], 422);
+        }
+
+        $existing = ExamSubject::where('exam_id', $exam->id)
+            ->where('exam_class_id', $examClass->id)
+            ->where('class_subject_id', $classSubject->id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        return ExamSubject::create([
+            'exam_id' => $exam->id,
+            'exam_class_id' => $examClass->id,
+            'class_subject_id' => $classSubject->id,
+            'subject_id' => $classSubject->subject_id,
+            'organization_id' => $organizationId,
+            'school_id' => $schoolId,
         ]);
     }
 }

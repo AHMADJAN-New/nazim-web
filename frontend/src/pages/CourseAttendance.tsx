@@ -76,6 +76,7 @@ import {
   useCourseAttendanceSession,
   useCreateCourseAttendanceSession,
   useDeleteCourseAttendanceSession,
+  useCourseAttendanceGroups,
   useCourseRoster,
   useMarkCourseAttendanceRecords,
   useScanCourseAttendance,
@@ -86,6 +87,7 @@ import {
   CourseAttendanceSession,
   CourseRosterStudent,
 } from '@/hooks/useCourseAttendance';
+import { CourseAttendanceGroupsPanel } from '@/components/course-attendance/CourseAttendanceGroupsPanel';
 import { SessionReportTable } from '@/components/course-attendance/SessionReportTable';
 import { CourseReportTable } from '@/components/course-attendance/CourseReportTable';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -133,14 +135,21 @@ export default function CourseAttendance() {
   const [sessionTitle, setSessionTitle] = useState('');
   const [sessionMethod, setSessionMethod] = useState<'manual' | 'barcode'>('manual');
   const [sessionRemarks, setSessionRemarks] = useState('');
+  const [sessionGroupId, setSessionGroupId] = useState('all');
 
   const scanInputRef = useRef<HTMLInputElement | null>(null);
   const [studentCache, setStudentCache] = useState<Map<string, any>>(new Map());
 
   const { data: courses = [] } = useShortTermCourses();
   const { data: sessions = [], isLoading: sessionsLoading } = useCourseAttendanceSessions(selectedCourseId || undefined);
+  const { data: attendanceGroups = [] } = useCourseAttendanceGroups(selectedCourseId || undefined);
   const { data: currentSession } = useCourseAttendanceSession(selectedSessionId || '');
-  const { data: roster = [], isLoading: rosterLoading } = useCourseRoster(selectedCourseId || undefined);
+  const markingGroupId = selectedSessionId
+    ? (currentSession?.attendance_group_id
+      ?? sessions.find((session) => session.id === selectedSessionId)?.attendance_group_id
+      ?? null)
+    : null;
+  const { data: roster = [], isLoading: rosterLoading } = useCourseRoster(selectedCourseId || undefined, markingGroupId);
   const { data: scanFeed = [] } = useCourseAttendanceScans(selectedSessionId || '', 30);
   const { data: sessionReport = [], isLoading: sessionReportLoading } = useCourseAttendanceSessionReport(reportSessionId);
   const { data: courseReport = [], isLoading: courseReportLoading } = useCourseAttendanceCourseReport({
@@ -327,6 +336,7 @@ export default function CourseAttendance() {
     try {
       const created = await createSession.mutateAsync({
         course_id: selectedCourseId,
+        attendance_group_id: sessionGroupId === 'all' ? null : sessionGroupId,
         session_date: sessionDate,
         session_title: sessionTitle || null,
         method: sessionMethod,
@@ -338,6 +348,7 @@ export default function CourseAttendance() {
       setSessionRemarks('');
       setSessionDate(format(new Date(), 'yyyy-MM-dd'));
       setSessionMethod('manual');
+      setSessionGroupId('all');
       
       // Switch to mark tab and select the new session
       setMainTab('mark');
@@ -564,6 +575,7 @@ export default function CourseAttendance() {
 
                 {/* Mark Attendance Tab */}
                 <TabsContent value="mark" className="space-y-4 md:space-y-6">
+                  <CourseAttendanceGroupsPanel courseId={selectedCourseId} />
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                     {/* Sessions List */}
                     <Card className="lg:col-span-1">
@@ -629,6 +641,11 @@ export default function CourseAttendance() {
                                       </div>
                                       {session.session_title && (
                                         <p className="text-xs md:text-sm text-muted-foreground truncate mb-2">{session.session_title}</p>
+                                      )}
+                                      {session.attendance_group?.name && (
+                                        <p className="text-xs text-muted-foreground truncate mb-2">
+                                          {t('courses.attendance.groupBadge')}: {session.attendance_group.name}
+                                        </p>
                                       )}
                                       
                                       {/* Total Students */}
@@ -726,6 +743,7 @@ export default function CourseAttendance() {
                         <CardTitle className="text-base md:text-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                           <span className="text-sm md:text-base">
                             {selectedSessionId ? t('courses.attendance.markAttendance') : t('courses.attendance.selectSession')}
+                            {currentSession?.attendance_group?.name ? ` · ${currentSession.attendance_group.name}` : ''}
                           </span>
                           {selectedSessionId && currentSession?.status === 'open' && (
                             <Button variant="outline" size="sm" onClick={handleCloseSession} className="w-full sm:w-auto">
@@ -804,7 +822,7 @@ export default function CourseAttendance() {
                                       ) : orderedRoster.length === 0 ? (
                                         <TableRow>
                                           <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                                            {t('courses.attendance.noEnrolledStudents')}
+                                            {markingGroupId ? t('courses.attendance.noGroupStudents') : t('courses.attendance.noEnrolledStudents')}
                                           </TableCell>
                                         </TableRow>
                                       ) : (
@@ -864,7 +882,7 @@ export default function CourseAttendance() {
                                     </div>
                                   ) : orderedRoster.length === 0 ? (
                                     <div className="text-center py-8 text-muted-foreground">
-                                      {t('courses.attendance.noEnrolledStudents')}
+                                      {markingGroupId ? t('courses.attendance.noGroupStudents') : t('courses.attendance.noEnrolledStudents')}
                                     </div>
                                   ) : (
                                     orderedRoster.map((student) => {
@@ -1116,6 +1134,21 @@ export default function CourseAttendance() {
                   <SelectItem value="mixed">{t('courses.attendance.mixed')}</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm md:text-base">{t('courses.attendance.sessionGroup')}</Label>
+              <Select value={sessionGroupId} onValueChange={setSessionGroupId}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('courses.attendance.allStudents')}</SelectItem>
+                  {attendanceGroups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">{t('courses.attendance.sessionGroupHint')}</p>
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">

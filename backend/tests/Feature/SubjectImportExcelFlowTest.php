@@ -177,6 +177,101 @@ class SubjectImportExcelFlowTest extends TestCase
     }
 
     #[Test]
+    public function excel_import_skips_case_and_whitespace_duplicate_codes_without_updating(): void
+    {
+        [$user, $xlsxPath, $organization, $school] = $this->makeImportScenario([
+            ['name' => 'Quran Changed', 'code' => ' qur-01 '],
+        ]);
+
+        $existing = Subject::create([
+            'organization_id' => $organization->id,
+            'school_id' => $school->id,
+            'name' => 'Quran Existing',
+            'code' => 'QUR-01',
+            'description' => 'Keep me',
+            'is_active' => true,
+        ]);
+
+        try {
+            $commitResponse = $this->actingAsUser($user)->post('/api/subject-import/commit', [
+                'file' => new UploadedFile($xlsxPath, 'subjects_import.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),
+            ]);
+
+            $commitResponse->assertStatus(202);
+            $jobId = $commitResponse->json('job_id');
+
+            $statusResponse = $this->actingAsUser($user)->get("/api/subject-import/commit/{$jobId}/status");
+            $statusResponse->assertStatus(200);
+            $statusResponse->assertJsonPath('status', 'completed');
+            $statusResponse->assertJsonPath('created_subjects', 0);
+            $statusResponse->assertJsonPath('skipped_subjects', 1);
+
+            $this->assertSame(1, Subject::query()
+                ->where('organization_id', $organization->id)
+                ->where('school_id', $school->id)
+                ->whereRaw('upper(trim(code)) = ?', ['QUR-01'])
+                ->count());
+            $this->assertDatabaseHas('subjects', [
+                'id' => $existing->id,
+                'name' => 'Quran Existing',
+                'code' => 'QUR-01',
+                'description' => 'Keep me',
+            ]);
+        } finally {
+            @unlink($xlsxPath);
+        }
+    }
+
+    #[Test]
+    public function excel_import_does_not_treat_another_schools_code_as_a_duplicate(): void
+    {
+        [$user, $xlsxPath, $organization, $school] = $this->makeImportScenario([
+            ['name' => 'Hadith Here', 'code' => 'HAD-09'],
+        ]);
+
+        $otherSchool = SchoolBranding::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+        $otherSubject = Subject::create([
+            'organization_id' => $organization->id,
+            'school_id' => $otherSchool->id,
+            'name' => 'Hadith Elsewhere',
+            'code' => 'HAD-09',
+            'description' => null,
+            'is_active' => true,
+        ]);
+
+        try {
+            $commitResponse = $this->actingAsUser($user)->post('/api/subject-import/commit', [
+                'file' => new UploadedFile($xlsxPath, 'subjects_import.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),
+            ]);
+
+            $commitResponse->assertStatus(202);
+            $jobId = $commitResponse->json('job_id');
+
+            $statusResponse = $this->actingAsUser($user)->get("/api/subject-import/commit/{$jobId}/status");
+            $statusResponse->assertStatus(200);
+            $statusResponse->assertJsonPath('status', 'completed');
+            $statusResponse->assertJsonPath('created_subjects', 1);
+            $statusResponse->assertJsonPath('skipped_subjects', 0);
+
+            $this->assertDatabaseHas('subjects', [
+                'id' => $otherSubject->id,
+                'school_id' => $otherSchool->id,
+                'name' => 'Hadith Elsewhere',
+            ]);
+            $this->assertDatabaseHas('subjects', [
+                'organization_id' => $organization->id,
+                'school_id' => $school->id,
+                'code' => 'HAD-09',
+                'name' => 'Hadith Here',
+            ]);
+        } finally {
+            @unlink($xlsxPath);
+        }
+    }
+
+    #[Test]
     public function excel_import_commit_completes_with_database_queue_in_testing(): void
     {
         Config::set('queue.default', 'database');
