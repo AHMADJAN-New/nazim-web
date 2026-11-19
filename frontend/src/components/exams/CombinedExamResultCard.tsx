@@ -1,9 +1,16 @@
-import { Award, AlertCircle, BookOpen, User } from 'lucide-react';
+import { AlertCircle, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { kashfCardTextFor } from '@/lib/exams/kashfCardText';
 import { useLanguage } from '@/hooks/useLanguage';
 
 export type CombinedMarkSide = {
@@ -24,6 +31,8 @@ export type CombinedSubjectRow = {
   combined_obtained: number | null;
   combined_total: number | null;
   combined_passing: number | null;
+  percentage?: number | null;
+  grade_name?: string | null;
   is_pass: boolean | null;
   is_complete: boolean;
   incomplete_reasons?: string[];
@@ -68,9 +77,13 @@ export type CombinedReportCard = {
     combined_obtained?: number | null;
     combined_total?: number | null;
     combined_passing?: number | null;
+    combined_obtained_raw?: number | null;
     overall_percentage?: number | null;
+    overall_grade?: string | null;
     overall_result?: 'Pass' | 'Fail' | 'Incomplete';
     is_complete?: boolean;
+    absence_count?: number;
+    marks_cut?: number;
   };
 };
 
@@ -92,7 +105,13 @@ function examPeriod(exam: CombinedReportCard['exam_a']): string {
   return start || end || '';
 }
 
-function StudentPhoto({ studentId, picturePath }: { studentId?: string | null; picturePath?: string | null }) {
+function StudentPhoto({
+  studentId,
+  picturePath,
+}: {
+  studentId?: string | null;
+  picturePath?: string | null;
+}) {
   const { t } = useLanguage();
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
@@ -152,34 +171,40 @@ function StudentPhoto({ studentId, picturePath }: { studentId?: string | null; p
   );
 }
 
-function SideMarks({
-  side,
-  t,
-}: {
-  side: CombinedMarkSide;
-  t: (key: 'examReports.absent' | 'studentReportCard.missingMark' | 'studentReportCard.notInExam' | 'studentReportCard.passingMark') => string;
-}) {
+function SideMarks({ side }: { side: CombinedMarkSide }) {
+  const { language } = useLanguage();
+  const kashfCardText = kashfCardTextFor(language);
+
   if (!side.enrolled) {
-    return <Badge variant="outline" className="text-xs">{t('studentReportCard.notInExam')}</Badge>;
+    return (
+      <Badge variant="outline" className="text-xs">
+        {kashfCardText.notInExam}
+      </Badge>
+    );
   }
   if (side.is_absent) {
-    return <Badge variant="outline" className="text-xs">{t('examReports.absent')}</Badge>;
+    return (
+      <Badge variant="outline" className="text-xs">
+        {kashfCardText.absent}
+      </Badge>
+    );
   }
   if (side.missing_mark || side.marks_obtained === null) {
-    return <Badge variant="outline" className="border-amber-300 text-xs text-amber-800 dark:text-amber-200">{t('studentReportCard.missingMark')}</Badge>;
+    return (
+      <Badge
+        variant="outline"
+        className="border-amber-300 text-xs text-amber-800 dark:text-amber-200"
+      >
+        {kashfCardText.missingMark}
+      </Badge>
+    );
   }
 
   return (
-    <div className="space-y-1">
-      <p className="font-semibold tabular-nums" dir="ltr">
-        {formatMark(side.marks_obtained)}
-        {side.total_marks !== null ? ` / ${formatMark(side.total_marks)}` : ''}
-      </p>
-      <p className="text-xs text-muted-foreground">
-        {t('studentReportCard.passingMark')}{' '}
-        <span className="tabular-nums" dir="ltr">{formatMark(side.passing_marks)}</span>
-      </p>
-    </div>
+    <p className="font-semibold tabular-nums" dir="ltr">
+      {formatMark(side.marks_obtained)}
+      {side.total_marks !== null ? ` / ${formatMark(side.total_marks)}` : ''}
+    </p>
   );
 }
 
@@ -192,155 +217,212 @@ export function CombinedExamResultCard({
   schoolName?: string | null;
   organizationName?: string | null;
 }) {
-  const { t, isRTL } = useLanguage();
-  const summary = card.summary;
+  const { language } = useLanguage();
+  const kashfCardText = kashfCardTextFor(language);
   const classLabel = card.student.class
     ? `${card.student.class}${card.student.section ? ` - ${card.student.section}` : ''}`
     : null;
+  const summary = card.summary;
+  const passingValues = card.subjects
+    .map((subject) => subject.combined_passing)
+    .filter((value): value is number => value !== null && value !== undefined);
+  const fullValues = card.subjects
+    .map((subject) => subject.combined_total)
+    .filter((value): value is number => value !== null && value !== undefined);
+  const passingUniform =
+    passingValues.length > 0 && passingValues.every((value) => value === passingValues[0]);
+  const fullUniform = fullValues.length > 0 && fullValues.every((value) => value === fullValues[0]);
+  const minimumValue =
+    passingValues.length === 0
+      ? null
+      : passingUniform
+        ? passingValues[0]
+        : summary.combined_passing;
+  const maximumValue = fullUniform ? fullValues[0] : summary.combined_total;
+  const resultKey =
+    summary.overall_result === 'Pass'
+      ? 'pass'
+      : summary.overall_result === 'Fail'
+        ? 'fail'
+        : 'incomplete';
+  const resultLabel =
+    resultKey === 'pass'
+      ? kashfCardText.pass
+      : resultKey === 'fail'
+        ? kashfCardText.fail
+        : kashfCardText.incomplete;
   const displaySchool = schoolName || organizationName || card.organization_name || '';
-  const overall = summary.overall_result ?? 'Incomplete';
 
   return (
-    <div className="space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
-      <Card className="overflow-hidden border-2">
-        <CardHeader className="space-y-3 border-b text-center">
-          {displaySchool ? (
-            <p className="text-sm font-medium text-muted-foreground">{displaySchool}</p>
-          ) : null}
-          <div className="flex items-center justify-center gap-2">
-            <Award className="hidden h-6 w-6 text-primary md:inline-flex" />
-            <CardTitle className="text-xl sm:text-2xl">{t('studentReportCard.combinedTitle')}</CardTitle>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <Badge variant="secondary">{card.exam_a.name}</Badge>
-            <span className="text-muted-foreground">+</span>
-            <Badge variant="secondary">{card.exam_b.name}</Badge>
-            {classLabel ? <Badge variant="outline">{classLabel}</Badge> : null}
-            {card.academic_year ? <Badge variant="outline">{card.academic_year}</Badge> : null}
-          </div>
-          <p className="text-xs text-muted-foreground sm:text-sm">{t('studentReportCard.combineHint')}</p>
-        </CardHeader>
-        <CardContent className="grid gap-6 pt-6 md:grid-cols-[auto_1fr]">
+    <article className="kashf-sheet kashf-wide student-report-card" dir="rtl">
+      <header className="kashf-head">
+        <div className="kashf-head-side">
           <StudentPhoto studentId={card.student.id} picturePath={card.student.picture_path} />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Info label={t('userManagement.fullName')} value={card.student.full_name} />
-            <Info label={t('examReports.fatherName')} value={card.student.father_name} />
-            <Info label={t('examReports.admissionNo')} value={card.student.admission_no} />
-            <Info label={t('students.rollNo')} value={card.student.roll_number} />
-            <Info label={t('studentReportCard.examA')} value={card.exam_a.name} detail={examPeriod(card.exam_a)} />
-            <Info label={t('studentReportCard.examB')} value={card.exam_b.name} detail={examPeriod(card.exam_b)} />
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="kashf-head-text">
+          {displaySchool ? <p className="kashf-school">{displaySchool}</p> : null}
+          <h2 className="kashf-title">{kashfCardText.title}</h2>
+          <p className="kashf-exam">
+            {card.exam_a.name} + {card.exam_b.name}
+            {card.academic_year ? ` — ${card.academic_year}` : ''}
+            {classLabel ? ` — ${classLabel}` : ''}
+          </p>
+        </div>
+        <div className="kashf-head-side" />
+      </header>
+
+      <div className="kashf-identity">
+        <Info label={kashfCardText.fullName} value={card.student.full_name} />
+        <Info label={kashfCardText.fatherName} value={card.student.father_name} />
+        <Info label={kashfCardText.rollNumber} value={card.student.roll_number} />
+        <Info label={kashfCardText.admissionNo} value={card.student.admission_no} />
+        <Info
+          label={kashfCardText.examA}
+          value={card.exam_a.name}
+          detail={examPeriod(card.exam_a)}
+        />
+        <Info
+          label={kashfCardText.examB}
+          value={card.exam_b.name}
+          detail={examPeriod(card.exam_b)}
+        />
+      </div>
 
       {!card.enrolled_in_second_exam ? (
         <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>{t('studentReportCard.notEnrolledSecond')}</p>
+          <p>{kashfCardText.notEnrolledSecond}</p>
         </div>
       ) : null}
 
-      <Card className="overflow-hidden">
-        <CardHeader className="bg-muted/30">
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <BookOpen className="h-4 w-4 text-primary" />
-            {t('studentReportCard.academicPerformance')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-start">{t('studentReportCard.subjectName')}</TableHead>
-                  <TableHead className="text-center">{card.exam_a.name}</TableHead>
-                  <TableHead className="text-center">{card.exam_b.name}</TableHead>
-                  <TableHead className="text-center">{t('studentReportCard.combined')}</TableHead>
-                  <TableHead className="text-center">{t('examReports.result')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {card.subjects.map((subject, index) => (
-                  <TableRow key={subject.class_subject_id || `${subject.subject_name}-${index}`}>
-                    <TableCell className="text-start font-medium">{subject.subject_name}</TableCell>
-                    <TableCell className="text-center">
-                      <SideMarks side={subject.exam_a} t={t} />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <SideMarks side={subject.exam_b} t={t} />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {subject.combined_obtained === null ? (
-                        <div className="space-y-1">
-                          <Badge variant="outline" className="border-amber-300 text-xs text-amber-800 dark:text-amber-200">
-                            {t('examReports.incomplete')}
-                          </Badge>
-                          {subject.combined_passing !== null ? (
-                            <p className="text-xs text-muted-foreground">
-                              {t('studentReportCard.combinedPassingMark')}{' '}
-                              <span dir="ltr" className="tabular-nums">{formatMark(subject.combined_passing)}</span>
-                            </p>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <p className="font-semibold tabular-nums" dir="ltr">
-                            {formatMark(subject.combined_obtained)}
-                            {subject.combined_total !== null ? ` / ${formatMark(subject.combined_total)}` : ''}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {t('studentReportCard.combinedPassingMark')}{' '}
-                            <span dir="ltr" className="tabular-nums">{formatMark(subject.combined_passing)}</span>
-                          </p>
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <ResultBadge complete={subject.is_complete} pass={subject.is_pass} t={t} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-                <TableRow className="bg-amber-50 font-semibold dark:bg-amber-950/20">
-                  <TableCell className="text-start">{t('studentReportCard.grandTotal')}</TableCell>
-                  <TableCell />
-                  <TableCell />
-                  <TableCell className="text-center">
-                    {summary.is_complete && summary.combined_obtained !== null && summary.combined_obtained !== undefined ? (
-                      <span className="tabular-nums" dir="ltr">
-                        {formatMark(summary.combined_obtained)} / {formatMark(summary.combined_total)}
-                      </span>
-                    ) : (
-                      <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                        {t('studentReportCard.incompleteCombined')}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <ResultBadge
-                      complete={summary.is_complete === true && overall !== 'Incomplete'}
-                      pass={overall === 'Pass' ? true : overall === 'Fail' ? false : null}
-                      t={t}
-                    />
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label={t('studentReportCard.passedSubjects')} value={String(summary.passed_subjects ?? 0)} />
-        <Stat label={t('studentReportCard.failedSubjects')} value={String(summary.failed_subjects ?? 0)} />
-        <Stat label={t('studentReportCard.subjectsIncomplete')} value={String(summary.incomplete_subjects ?? 0)} />
-        <Stat
-          label={t('studentReportCard.overallPercentage')}
-          value={summary.overall_percentage !== null && summary.overall_percentage !== undefined
-            ? `${formatMark(summary.overall_percentage)}%`
-            : '—'}
-        />
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-start">{kashfCardText.subject}</TableHead>
+              <TableHead className="text-center">{card.exam_a.name}</TableHead>
+              <TableHead className="text-center">{card.exam_b.name}</TableHead>
+              <TableHead className="text-center">{kashfCardText.combined}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {card.subjects.map((subject, index) => (
+              <TableRow key={subject.class_subject_id || `${subject.subject_name}-${index}`}>
+                <TableCell className="text-start font-medium">{subject.subject_name}</TableCell>
+                <TableCell className="text-center">
+                  <SideMarks side={subject.exam_a} />
+                </TableCell>
+                <TableCell className="text-center">
+                  <SideMarks side={subject.exam_b} />
+                </TableCell>
+                <TableCell className="text-center">
+                  {subject.combined_obtained === null ? (
+                    <Badge
+                      variant="outline"
+                      className="border-amber-300 text-xs text-amber-800 dark:text-amber-200"
+                    >
+                      {kashfCardText.incomplete}
+                    </Badge>
+                  ) : (
+                    <span className="font-semibold tabular-nums" dir="ltr">
+                      {formatMark(subject.combined_obtained)}
+                      {subject.combined_total !== null
+                        ? ` / ${formatMark(subject.combined_total)}`
+                        : ''}
+                    </span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
-    </div>
+
+      <div className="kashf-totals">
+        <div className="kashf-stat">
+          <p className="text-xs text-muted-foreground">
+            {passingUniform ? kashfCardText.minimumMarks : kashfCardText.passingTotal}
+          </p>
+          <p className="text-base font-semibold tabular-nums" dir="ltr">
+            {formatMark(minimumValue)}
+          </p>
+        </div>
+        <div className="kashf-stat">
+          <p className="text-xs text-muted-foreground">{kashfCardText.maximumMarks}</p>
+          <p className="text-base font-semibold tabular-nums" dir="ltr">
+            {formatMark(maximumValue)}
+          </p>
+        </div>
+        <div className="kashf-stat">
+          <p className="text-xs text-muted-foreground">{kashfCardText.obtainedMarks}</p>
+          <p className="text-base font-semibold tabular-nums" dir="ltr">
+            {formatMark(summary.combined_obtained)}
+          </p>
+        </div>
+        <div className="kashf-stat">
+          <p className="text-xs text-muted-foreground">{kashfCardText.totalMarks}</p>
+          <p className="text-base font-semibold tabular-nums" dir="ltr">
+            {formatMark(summary.combined_total)}
+          </p>
+        </div>
+        <div className="kashf-stat">
+          <p className="text-xs text-muted-foreground">{kashfCardText.overallPercentage}</p>
+          <p className="text-base font-semibold tabular-nums" dir="ltr">
+            {summary.overall_percentage !== null && summary.overall_percentage !== undefined
+              ? `${formatMark(summary.overall_percentage)}%`
+              : '—'}
+          </p>
+        </div>
+        <div className="kashf-stat">
+          <p className="text-xs text-muted-foreground">{kashfCardText.overallGrade}</p>
+          <p className="text-base font-semibold">{summary.overall_grade || '—'}</p>
+        </div>
+        {summary.marks_cut !== undefined ? (
+          <>
+            <div className="kashf-stat">
+              <p className="text-xs text-muted-foreground">{kashfCardText.absenceCount}</p>
+              <p className="text-base font-semibold tabular-nums" dir="ltr">
+                {summary.absence_count ?? 0}
+              </p>
+            </div>
+            <div className="kashf-stat">
+              <p className="text-xs text-muted-foreground">{kashfCardText.marksCut}</p>
+              <p className="text-base font-semibold tabular-nums" dir="ltr">
+                {formatMark(summary.marks_cut)}
+              </p>
+            </div>
+          </>
+        ) : null}
+        <div className={`kashf-stat kashf-verdict kashf-${resultKey}`}>
+          <p className="text-xs text-muted-foreground">{kashfCardText.overallResult}</p>
+          <p className="text-base font-semibold">{resultLabel}</p>
+        </div>
+      </div>
+
+      <p className="kashf-attest">
+        {kashfCardText.attestationLead(displaySchool || '—')}
+        <strong>{card.student.full_name || '—'}</strong>
+        {kashfCardText.attestationBetween}
+        <strong>{card.student.father_name || '—'}</strong>
+        {kashfCardText.attestationEnding(
+          resultKey,
+          `${card.exam_a.name} + ${card.exam_b.name}`,
+          summary.overall_grade || '—',
+        )}
+      </p>
+      <p className="kashf-conduct">{kashfCardText.conduct}</p>
+
+      <div className="kashf-signs">
+        <div>
+          <i />
+          <span>{kashfCardText.principal}</span>
+        </div>
+        <div>
+          <i />
+          <span>{kashfCardText.schoolSeal}</span>
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -352,33 +434,4 @@ function Info({ label, value, detail }: { label: string; value?: string | null; 
       {detail ? <p className="text-xs text-muted-foreground">{detail}</p> : null}
     </div>
   );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <Card className="overflow-hidden">
-      <CardContent className="space-y-1 p-3 sm:p-4">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-lg font-semibold tabular-nums" dir="ltr">{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ResultBadge({
-  complete,
-  pass,
-  t,
-}: {
-  complete: boolean;
-  pass: boolean | null;
-  t: (key: 'events.pass' | 'events.fail' | 'examReports.incomplete') => string;
-}) {
-  if (!complete || pass === null) {
-    return <Badge variant="outline">{t('examReports.incomplete')}</Badge>;
-  }
-  if (pass) {
-    return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">{t('events.pass')}</Badge>;
-  }
-  return <Badge variant="destructive">{t('events.fail')}</Badge>;
 }

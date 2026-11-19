@@ -1,32 +1,44 @@
 import { useQuery } from '@tanstack/react-query';
-import { Printer, Award, User, TrendingUp, BookOpen, Trophy, AlertCircle } from 'lucide-react';
+import { Printer, Award, User, AlertCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { CombinedExamResultCard, type CombinedReportCard } from '@/components/exams/CombinedExamResultCard';
+import {
+  CombinedExamResultCard,
+  type CombinedReportCard,
+} from '@/components/exams/CombinedExamResultCard';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ReportExportButtons } from '@/components/reports/ReportExportButtons';
 import { ReportProgressDialog } from '@/components/reports/ReportProgressDialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAcademicYears, useCurrentAcademicYear } from '@/hooks/useAcademicYears';
 import { useExams, useLatestExamFromCurrentYear, useExamClasses } from '@/hooks/useExams';
 import { useExamStudentsWithNumbers } from '@/hooks/useExamNumbers';
-import { translateCombinedExamError, useExportStudentExamReportCardsPdf } from '@/hooks/useExportStudentExamReportCardsPdf';
+import {
+  translateCombinedExamError,
+  useExportStudentExamReportCardsPdf,
+} from '@/hooks/useExportStudentExamReportCardsPdf';
 import { getReportLocaleOptions } from '@/lib/reporting/reportLocaleOptions';
 import { showToast } from '@/lib/toast';
 import { formatDate } from '@/lib/utils';
+import { kashfCardTextFor } from '@/lib/exams/kashfCardText';
 import { calculateGrade } from '@/lib/utils/gradeCalculator';
 import { useGrades } from '@/hooks/useGrades';
 import { examsApi } from '@/lib/api/client';
 import { Label } from '@/components/ui/label';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useHasPermission } from '@/hooks/usePermissions';
-import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useProfile } from '@/hooks/useProfiles';
 import { FilterPanel } from '@/components/layout/FilterPanel';
@@ -69,9 +81,11 @@ type StudentReportData = {
       obtained: number | null;
       total: number;
       percentage: number | null;
+      passing?: number | null;
     };
     is_absent?: boolean;
     is_pass?: boolean | null;
+    grade_name?: string | null;
   }>;
   summary?: {
     total_subjects?: number;
@@ -90,7 +104,13 @@ type StudentReportData = {
 };
 
 // Component for authenticated student picture display in report card
-const ReportCardStudentAvatar = ({ studentId, picturePath }: { studentId?: string | null; picturePath?: string | null }) => {
+const ReportCardStudentAvatar = ({
+  studentId,
+  picturePath,
+}: {
+  studentId?: string | null;
+  picturePath?: string | null;
+}) => {
   const { t } = useLanguage();
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
@@ -98,7 +118,7 @@ const ReportCardStudentAvatar = ({ studentId, picturePath }: { studentId?: strin
   useEffect(() => {
     // Only fetch if picturePath exists and is not empty
     const hasPicture = picturePath && picturePath.trim() !== '' && studentId;
-    
+
     if (hasPicture) {
       let currentBlobUrl: string | null = null;
 
@@ -107,16 +127,16 @@ const ReportCardStudentAvatar = ({ studentId, picturePath }: { studentId?: strin
           const { apiClient } = await import('@/lib/api/client');
           const token = apiClient.getToken();
           const url = `/api/students/${studentId}/picture`;
-          
+
           const response = await fetch(url, {
             method: 'GET',
             headers: {
-              'Accept': 'image/*',
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+              Accept: 'image/*',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
             credentials: 'include',
           });
-          
+
           if (!response.ok) {
             if (response.status === 404) {
               setImageUrl(null);
@@ -125,7 +145,7 @@ const ReportCardStudentAvatar = ({ studentId, picturePath }: { studentId?: strin
             }
             throw new Error(`Failed to fetch image: ${response.status}`);
           }
-          
+
           const blob = await response.blob();
           const blobUrl = URL.createObjectURL(blob);
           currentBlobUrl = blobUrl;
@@ -139,9 +159,9 @@ const ReportCardStudentAvatar = ({ studentId, picturePath }: { studentId?: strin
           setImageError(true);
         }
       };
-      
+
       fetchImage();
-      
+
       return () => {
         if (currentBlobUrl) {
           URL.revokeObjectURL(currentBlobUrl);
@@ -174,7 +194,9 @@ const ReportCardStudentAvatar = ({ studentId, picturePath }: { studentId?: strin
           <User className="h-16 w-16 text-muted-foreground/50" />
         )}
       </div>
-      <p className="src-photo-label text-xs text-muted-foreground mt-2">{t('studentReportCard.studentPhoto')}</p>
+      <p className="src-photo-label text-xs text-muted-foreground mt-2">
+        {t('studentReportCard.studentPhoto')}
+      </p>
     </div>
   );
 };
@@ -186,19 +208,16 @@ function GradeCard({
   academicYear,
   schoolName,
   organizationName,
-  t,
-  isRTL,
 }: {
   reportData: StudentReportData | null;
   selectedExam: any;
   academicYear: any;
   schoolName?: string | null;
   organizationName?: string | null;
-  t: (key: string) => string;
-  isRTL: boolean;
 }) {
-  const { language } = useLanguage();
   const { data: profile } = useProfile();
+  const { language } = useLanguage();
+  const kashfCardText = kashfCardTextFor(language);
   const { data: grades } = useGrades(profile?.organization_id);
 
   const examName = reportData?.exam?.name || selectedExam?.name;
@@ -221,305 +240,278 @@ function GradeCard({
     );
   }
 
-  return (
-    <div className="student-report-card space-y-4 print:space-y-0" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* School banner — prominent in print, subtle on screen */}
-      <div className="src-school-banner hidden print:block rounded-t-md">
-        {displaySchoolName ? (
-          <h2 className="src-school-name">{displaySchoolName}</h2>
+  const subjects = reportData.subjects ?? [];
+  const half = Math.ceil(subjects.length / 2);
+  const leftSubjects = subjects.slice(0, half);
+  const rightSubjects = subjects.slice(half);
+  const rowCount = Math.max(leftSubjects.length, rightSubjects.length);
+  const summary = reportData.summary;
+  const passingValues = subjects
+    .map((subject) => subject.marks?.passing)
+    .filter((value): value is number => value !== null && value !== undefined);
+  const fullValues = subjects
+    .map((subject) => subject.marks?.total)
+    .filter((value): value is number => typeof value === 'number');
+  const passingUniform =
+    passingValues.length > 0 && passingValues.every((value) => value === passingValues[0]);
+  const fullUniform = fullValues.length > 0 && fullValues.every((value) => value === fullValues[0]);
+  const minimumValue =
+    passingValues.length === 0
+      ? null
+      : passingUniform
+        ? passingValues[0]
+        : passingValues.reduce((sum, value) => sum + value, 0);
+  const maximumValue = fullUniform ? fullValues[0] : summary?.total_maximum_marks;
+  const overallPercentage = summary?.overall_percentage;
+  const resultKey =
+    summary?.overall_result === 'Pass'
+      ? 'pass'
+      : summary?.overall_result === 'Incomplete'
+        ? 'incomplete'
+        : 'fail';
+  const calculatedGrade =
+    resultKey !== 'incomplete' && overallPercentage !== null && overallPercentage !== undefined
+      ? calculateGrade(overallPercentage, grades || [], language)?.name
+      : null;
+  const overallGrade =
+    resultKey === 'incomplete' ? '—' : summary?.overall_grade || calculatedGrade || '—';
+  const resultLabel =
+    resultKey === 'pass'
+      ? kashfCardText.pass
+      : resultKey === 'incomplete'
+        ? kashfCardText.incomplete
+        : kashfCardText.fail;
+  const studentName = reportData.student?.full_name || '—';
+  const fatherName = reportData.student?.father_name || '—';
+  const birthLabel =
+    reportData.student?.birth_date_formatted ||
+    (reportData.student?.birth_date ? formatDate(reportData.student.birth_date) : null) ||
+    '—';
+
+  const formatMark = (value: number | null | undefined) => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
+    const number = Number(value);
+    if (Math.abs(number - Math.round(number)) < 0.001) return String(Math.round(number));
+    return String(Math.round(number * 100) / 100);
+  };
+
+  const subjectGrade = (subject: (typeof subjects)[number]) => {
+    if (subject.is_absent) return null;
+    if (subject.grade_name) return subject.grade_name;
+    const percentage = subject.marks?.percentage;
+    if (percentage === null || percentage === undefined) return null;
+    return calculateGrade(percentage, grades || [], language)?.name ?? null;
+  };
+
+  const renderMark = (subject: (typeof subjects)[number] | undefined) => {
+    if (!subject) return null;
+    if (subject.is_absent) {
+      return <span className="kashf-fail">{kashfCardText.absent}</span>;
+    }
+    const obtained = subject.marks?.obtained;
+    if (obtained === null || obtained === undefined) return <span>—</span>;
+    const total = subject.marks?.total;
+    const percentage = subject.marks?.percentage;
+    const grade = subjectGrade(subject);
+    const tone = subject.is_pass === false ? 'kashf-fail' : subject.is_pass ? 'kashf-pass' : '';
+    return (
+      <span className={tone}>
+        <span dir="ltr">
+          {formatMark(obtained)}
+          {typeof total === 'number' ? ` / ${formatMark(total)}` : ''}
+        </span>
+        {(percentage !== null && percentage !== undefined) || grade ? (
+          <span className="kashf-mark-meta">
+            {percentage !== null && percentage !== undefined ? `${formatMark(percentage)}%` : ''}
+            {grade ? `${percentage !== null && percentage !== undefined ? ' · ' : ''}${grade}` : ''}
+          </span>
         ) : null}
-        <p className="src-report-title">{t('nav.studentReportCard')}</p>
-        <p className="src-exam-meta">
-          {[examName, classLabel, academicYear?.name].filter(Boolean).join(' · ')}
-        </p>
+      </span>
+    );
+  };
+
+  return (
+    <article className="kashf-sheet student-report-card" dir="rtl">
+      <header className="kashf-head">
+        <div className="kashf-head-side">
+          <ReportCardStudentAvatar
+            studentId={reportData.student?.id || null}
+            picturePath={reportData.student?.picture_path || null}
+          />
+        </div>
+        <div className="kashf-head-text">
+          {displaySchoolName ? <p className="kashf-school">{displaySchoolName}</p> : null}
+          <h2 className="kashf-title">{kashfCardText.title}</h2>
+          <p className="kashf-exam">
+            {[examName, academicYear?.name, classLabel].filter(Boolean).join(' — ')}
+          </p>
+        </div>
+        <div className="kashf-head-side" />
+      </header>
+
+      <div className="kashf-identity">
+        <div>
+          <p className="text-xs text-muted-foreground">{kashfCardText.fullName}</p>
+          <p className="text-sm font-semibold">{studentName}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">{kashfCardText.fatherName}</p>
+          <p className="text-sm font-semibold">{fatherName}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">{kashfCardText.rollNumber}</p>
+          <p className="text-sm font-semibold" dir="ltr">
+            {reportData.student?.roll_number || '—'}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">{kashfCardText.className}</p>
+          <p className="text-sm font-semibold">{classLabel || '—'}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">{kashfCardText.admissionNo}</p>
+          <p className="text-sm font-semibold" dir="ltr">
+            {reportData.student?.admission_no || '—'}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">{kashfCardText.dateOfBirth}</p>
+          <p className="text-sm font-semibold">{birthLabel}</p>
+        </div>
       </div>
 
-      {/* Report Card Header with Badges (screen) */}
-      <Card className="src-card-section print:shadow-none border-2 print:border-0">
-        <CardHeader className="text-center border-b pb-4 src-print-hide">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Award className="h-8 w-8 text-primary" />
-            <CardTitle className="text-3xl">{t('nav.studentReportCard')}</CardTitle>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {examName ? (
-              <Badge className="px-3 py-1.5 text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
-                <span className="opacity-70 mr-1">{t('examReports.examName')}:</span>
-                <span className="font-semibold">{examName}</span>
-              </Badge>
-            ) : null}
-            {classLabel ? (
-              <Badge className="px-3 py-1.5 text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-200 dark:border-green-800">
-                <span className="opacity-70 mr-1">{t('search.class')}:</span>
-                <span className="font-semibold">{classLabel}</span>
-              </Badge>
-            ) : null}
-            {academicYear ? (
-              <Badge className="px-3 py-1.5 text-sm font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 border border-orange-200 dark:border-orange-800">
-                <span className="opacity-70 mr-1">{t('examReports.academicYear')}:</span>
-                <span className="font-semibold">{academicYear.name}</span>
-              </Badge>
-            ) : null}
-          </div>
-        </CardHeader>
-
-        {/* Student Information Section */}
-        <CardContent className="src-section-body pt-6 print:pt-0 print:px-0">
-          <div className="src-student-info-grid grid md:grid-cols-[auto_1fr] gap-6">
-            <ReportCardStudentAvatar
-              studentId={reportData.student?.id || null}
-              picturePath={reportData.student?.picture_path || null}
-            />
-
-            <div>
-              <h3 className="src-section-title text-lg font-semibold mb-4 flex items-center gap-2 src-print-hide">
-                <BookOpen className="h-5 w-5 text-primary" />
-                {t('courses.studentInformation')}
-              </h3>
-              <div className="src-info-fields grid md:grid-cols-2 gap-x-8 gap-y-3">
-                <div className="src-info-row flex items-start gap-2">
-                  <span className="src-info-label text-sm text-muted-foreground min-w-[120px]">{t('userManagement.fullName')}:</span>
-                  <span className="src-info-value text-sm font-semibold">
-                    {reportData.student?.full_name || '-'}
-                  </span>
-                </div>
-                <div className="src-info-row flex items-start gap-2">
-                  <span className="src-info-label text-sm text-muted-foreground min-w-[120px]">{t('students.rollNo')}:</span>
-                  <span className="src-info-value text-sm font-semibold">
-                    {reportData.student?.roll_number || '-'}
-                  </span>
-                </div>
-                <div className="src-info-row flex items-start gap-2">
-                  <span className="src-info-label text-sm text-muted-foreground min-w-[120px]">{t('examReports.fatherName')}:</span>
-                  <span className="src-info-value text-sm font-semibold">
-                    {reportData.student?.father_name || '-'}
-                  </span>
-                </div>
-                <div className="src-info-row flex items-start gap-2">
-                  <span className="src-info-label text-sm text-muted-foreground min-w-[120px]">{t('studentReportCard.dateOfBirth')}:</span>
-                  <span className="src-info-value text-sm font-semibold">
-                    {reportData.student?.birth_date_formatted
-                      || (reportData.student?.birth_date ? formatDate(reportData.student.birth_date) : null)
-                      || '-'}
-                  </span>
-                </div>
-                <div className="src-info-row flex items-start gap-2">
-                  <span className="src-info-label text-sm text-muted-foreground min-w-[120px]">{t('examReports.admissionNo')}:</span>
-                  <span className="src-info-value text-sm font-semibold">
-                    {reportData.student?.admission_no || '-'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Academic Performance Section */}
-      <Card className="src-card-section print:shadow-none">
-        <CardHeader className="src-section-header bg-muted/30 print:bg-transparent">
-          <CardTitle className="src-section-title flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-amber-500 src-print-hide" />
-            {t('studentReportCard.academicPerformance')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="src-grades-table overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-12">#</TableHead>
-                  <TableHead>{t('studentReportCard.subjectName')}</TableHead>
-                  <TableHead className="text-center">{t('studentReportCard.maxMarks')}</TableHead>
-                  <TableHead className="text-center">{t('examReports.marksObtained')}</TableHead>
-                  <TableHead className="text-center">{t('studentReportCard.percentage')}</TableHead>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{kashfCardText.subject}</TableHead>
+              <TableHead className="text-center">{kashfCardText.marks}</TableHead>
+              <TableHead>{kashfCardText.subject}</TableHead>
+              <TableHead className="text-center">{kashfCardText.marks}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array.from({ length: rowCount }, (_, index) => {
+              const left = leftSubjects[index];
+              const right = rightSubjects[index];
+              return (
+                <TableRow key={left?.exam_subject_id || left?.id || `row-${index}`}>
+                  <TableCell className="font-medium">
+                    {left?.subject?.name || left?.name || '—'}
+                  </TableCell>
+                  <TableCell className="text-center">{renderMark(left)}</TableCell>
+                  <TableCell className="font-medium">
+                    {right ? right.subject?.name || right.name || '—' : ''}
+                  </TableCell>
+                  <TableCell className="text-center">{renderMark(right)}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reportData.subjects?.map((subject: any, index: number) => {
-                  // The subject object already contains marks information
-                  const marks = subject.marks;
-                  const isAbsent = subject.is_absent;
-                  const percentage = marks?.percentage || null;
-                  const subjectName = subject.subject?.name || subject.name || '-';
-                  const marksObtained = isAbsent ? null : (marks?.obtained ?? null);
-                  const totalMarks = marks?.total || '-';
-                  const isPass = subject.is_pass;
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
 
-                  return (
-                    <TableRow key={`${subject.exam_subject_id || subject.id || `subject-${index}`}`}>
-                      <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell className="font-medium">{subjectName}</TableCell>
-                      <TableCell className="text-center">{totalMarks}</TableCell>
-                      <TableCell className="text-center font-semibold">
-                        {isAbsent ? (
-                          <Badge variant="outline" className="text-xs">
-                            {t('examReports.absent') || 'Absent'}
-                          </Badge>
-                        ) : marksObtained !== null ? (
-                          <Badge
-                            className={`text-xs ${
-                              isPass
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-800'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-800'
-                            }`}
-                          >
-                            {marksObtained}/{totalMarks}
-                          </Badge>
-                        ) : (
-                          '-'
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {!isAbsent && marks?.percentage !== null && marks?.percentage !== undefined
-                          ? `${marks.percentage.toFixed(2)}%`
-                          : '-'}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {reportData.summary && (
-                  <TableRow className="src-total-row bg-amber-50 dark:bg-amber-950/20 font-bold">
-                    <TableCell colSpan={2} className="text-right">
-                      {t('studentReportCard.grandTotal')}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {reportData.summary.total_maximum_marks ?? '-'}
-                    </TableCell>
-                    <TableCell className="text-center text-lg">
-                      {reportData.summary.total_marks_obtained ?? '-'}
-                    </TableCell>
-                    <TableCell className="text-center text-lg">
-                      {reportData.summary.overall_percentage !== null && reportData.summary.overall_percentage !== undefined
-                        ? `${reportData.summary.overall_percentage.toFixed(2)}%`
-                        : '-'}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Overall Result & Remarks */}
-      <div className="src-summary-grid grid md:grid-cols-2 gap-6 print:gap-0">
-        {/* Result Card */}
-        <Card className="src-card-section print:shadow-none">
-          <CardHeader className="src-section-header bg-muted/30 print:bg-transparent">
-            <CardTitle className="src-section-title text-lg">{t('studentReportCard.overallResult')}</CardTitle>
-          </CardHeader>
-          <CardContent className="src-section-body pt-6 print:pt-0">
-            <div className="space-y-4">
-              {reportData.summary?.marks_cut !== undefined && (
-                <>
-                  <div className="src-result-stat flex justify-between items-center">
-                    <span className="text-muted-foreground">{t('examAbsencePenalty.absenceCount') || 'Absences'}:</span>
-                    <span className="font-semibold">{reportData.summary.absence_count ?? 0}</span>
-                  </div>
-                  <div className="src-result-stat flex justify-between items-center">
-                    <span className="text-muted-foreground">{t('examAbsencePenalty.marksCut') || 'Marks cut'}:</span>
-                    <span className="font-semibold">{reportData.summary.marks_cut}</span>
-                  </div>
-                  {reportData.summary.total_marks_obtained_raw !== undefined && (
-                    <div className="src-result-stat flex justify-between items-center">
-                      <span className="text-muted-foreground">{t('examAbsencePenalty.totalRaw') || 'Raw total'}:</span>
-                      <span className="font-semibold">
-                        {reportData.summary.total_marks_obtained_raw}/{reportData.summary.total_maximum_marks ?? '-'}
-                      </span>
-                    </div>
-                  )}
-                </>
-              )}
-              <div className="src-result-stat flex justify-between items-center">
-                <span className="text-muted-foreground">{t('studentReportCard.overallPercentage')}:</span>
-                <span className="src-result-value text-2xl font-bold text-primary">
-                  {reportData.summary?.overall_percentage !== null && reportData.summary?.overall_percentage !== undefined
-                    ? `${reportData.summary.overall_percentage.toFixed(2)}%`
-                    : '-'}
-                </span>
-              </div>
-              <div className="src-result-stat flex justify-between items-center">
-                <span className="text-muted-foreground">{t('studentReportCard.overallGrade')}:</span>
-                <Badge variant="default" className="text-xl px-4 py-2 print:text-base print:px-2 print:py-1">
-                  {(() => {
-                    const overallPercentage = reportData.summary?.overall_percentage;
-                    if (overallPercentage !== null && overallPercentage !== undefined) {
-                      const gradeInfo = calculateGrade(overallPercentage, grades || [], language);
-                      return gradeInfo?.name || '-';
-                    }
-                    return '-';
-                  })()}
-                </Badge>
-              </div>
-              <Separator className="src-print-hide" />
-              <div className="src-result-stat flex justify-between items-center">
-                <span className="text-muted-foreground">{t('examReports.result')}:</span>
-                {reportData.summary?.overall_result === 'Pass' ? (
-                  <Badge variant="default" className="gap-1 text-base px-3 py-1">
-                    <TrendingUp className="h-4 w-4 src-print-hide" />
-                    {t('events.pass')}
-                  </Badge>
-                ) : reportData.summary?.overall_result === 'Incomplete' ? (
-                  <Badge variant="outline" className="text-base px-3 py-1">
-                    {t('examReports.incomplete') || 'Incomplete'}
-                  </Badge>
-                ) : (
-                  <Badge variant="destructive" className="text-base px-3 py-1">
-                    {t('events.fail')}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Remarks */}
-        <Card className="src-card-section print:shadow-none">
-          <CardHeader className="src-section-header bg-muted/30 print:bg-transparent">
-            <CardTitle className="src-section-title text-lg">{t('studentReportCard.teacherRemarks')}</CardTitle>
-          </CardHeader>
-          <CardContent className="src-section-body pt-6 print:pt-0">
-            <div className="src-remarks-box min-h-[100px] p-3 border rounded-md bg-muted/10">
-              <p className="text-sm text-muted-foreground italic">
-                {t('studentReportCard.noRemarks')}
+      <div className="kashf-totals">
+        <div className="kashf-stat">
+          <p className="text-xs text-muted-foreground">
+            {passingUniform ? kashfCardText.minimumMarks : kashfCardText.passingTotal}
+          </p>
+          <p className="text-base font-semibold tabular-nums" dir="ltr">
+            {formatMark(minimumValue)}
+          </p>
+        </div>
+        <div className="kashf-stat">
+          <p className="text-xs text-muted-foreground">{kashfCardText.maximumMarks}</p>
+          <p className="text-base font-semibold tabular-nums" dir="ltr">
+            {formatMark(maximumValue)}
+          </p>
+        </div>
+        <div className="kashf-stat">
+          <p className="text-xs text-muted-foreground">{kashfCardText.obtainedMarks}</p>
+          <p className="text-base font-semibold tabular-nums" dir="ltr">
+            {formatMark(summary?.total_marks_obtained)}
+          </p>
+        </div>
+        <div className="kashf-stat">
+          <p className="text-xs text-muted-foreground">{kashfCardText.totalMarks}</p>
+          <p className="text-base font-semibold tabular-nums" dir="ltr">
+            {formatMark(summary?.total_maximum_marks)}
+          </p>
+        </div>
+        <div className="kashf-stat">
+          <p className="text-xs text-muted-foreground">{kashfCardText.overallPercentage}</p>
+          <p className="text-base font-semibold tabular-nums" dir="ltr">
+            {overallPercentage !== null && overallPercentage !== undefined
+              ? `${formatMark(overallPercentage)}%`
+              : '—'}
+          </p>
+        </div>
+        <div className="kashf-stat">
+          <p className="text-xs text-muted-foreground">{kashfCardText.overallGrade}</p>
+          <p className="text-base font-semibold">{overallGrade}</p>
+        </div>
+        {summary?.marks_cut !== undefined ? (
+          <>
+            <div className="kashf-stat">
+              <p className="text-xs text-muted-foreground">{kashfCardText.absenceCount}</p>
+              <p className="text-base font-semibold tabular-nums" dir="ltr">
+                {summary.absence_count ?? 0}
               </p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="kashf-stat">
+              <p className="text-xs text-muted-foreground">{kashfCardText.marksCut}</p>
+              <p className="text-base font-semibold tabular-nums" dir="ltr">
+                {formatMark(summary.marks_cut)}
+              </p>
+            </div>
+            {summary.total_marks_obtained_raw !== undefined ? (
+              <div className="kashf-stat">
+                <p className="text-xs text-muted-foreground">{kashfCardText.totalRaw}</p>
+                <p className="text-base font-semibold tabular-nums" dir="ltr">
+                  {formatMark(summary.total_marks_obtained_raw)}/
+                  {formatMark(summary.total_maximum_marks)}
+                </p>
+              </div>
+            ) : null}
+          </>
+        ) : null}
+        <div className={`kashf-stat kashf-verdict kashf-${resultKey}`}>
+          <p className="text-xs text-muted-foreground">{kashfCardText.overallResult}</p>
+          <p className="text-base font-semibold">{resultLabel}</p>
+        </div>
       </div>
 
-      {/* Signatures Section */}
-      <Card className="src-card-section print:shadow-none">
-        <CardHeader className="src-section-header">
-          <CardTitle className="src-section-title">{t('studentReportCard.signatures')}</CardTitle>
-        </CardHeader>
-        <CardContent className="src-section-body">
-          <div className="src-signatures-grid grid grid-cols-3 gap-8 pt-8 print:pt-4">
-            <div className="text-center space-y-2">
-              <div className="src-signature-line h-16 border-b-2 border-muted-foreground/20 print:h-10 print:border-b print:border-black"></div>
-              <p className="src-signature-label text-sm font-medium">{t('studentReportCard.classTeacher')}</p>
-            </div>
-            <div className="text-center space-y-2">
-              <div className="src-signature-line h-16 border-b-2 border-muted-foreground/20 print:h-10 print:border-b print:border-black"></div>
-              <p className="src-signature-label text-sm font-medium">{t('studentReportCard.principal')}</p>
-            </div>
-            <div className="text-center space-y-2">
-              <div className="src-signature-line h-16 border-b-2 border-muted-foreground/20 print:h-10 print:border-b print:border-black"></div>
-              <p className="src-signature-label text-sm font-medium">{t('studentReportCard.parent')}</p>
-            </div>
-          </div>
-          <div className="src-date-issued mt-6 text-center text-sm text-muted-foreground">
-            <p>{t('studentReportCard.dateIssued')}: {formatDate(new Date())}</p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      <p className="kashf-attest">
+        {kashfCardText.attestationLead(displaySchoolName || '—')}
+        <strong>{studentName}</strong>
+        {kashfCardText.attestationBetween}
+        <strong>{fatherName}</strong>
+        {kashfCardText.attestationEnding(resultKey, examName || '—', overallGrade)}
+      </p>
+      <p className="kashf-conduct">{kashfCardText.conduct}</p>
+
+      <div className="kashf-signs">
+        <div>
+          <i />
+          <span>{kashfCardText.principal}</span>
+        </div>
+        <div>
+          <i />
+          <span>{kashfCardText.schoolSeal}</span>
+        </div>
+      </div>
+
+      <footer className="kashf-foot">
+        <span>
+          {kashfCardText.dateIssued}: {formatDate(new Date())}
+        </span>
+      </footer>
+    </article>
   );
 }
 
 export default function StudentExamReport() {
-  const { t, isRTL, language } = useLanguage();
+  const { t, language } = useLanguage();
   const canViewReports = useHasPermission('students.read');
   const { data: profile } = useProfile();
   const { data: organization } = useCurrentOrganization();
@@ -540,7 +532,7 @@ export default function StudentExamReport() {
 
   const { data: studentsWithNumbers, isLoading: examStudentsLoading } = useExamStudentsWithNumbers(
     selectedExamId && selectedClassId ? selectedExamId : undefined,
-    selectedClassId || undefined
+    selectedClassId || undefined,
   );
   const classStudents = studentsWithNumbers?.students ?? [];
 
@@ -579,12 +571,16 @@ export default function StudentExamReport() {
   }));
 
   const secondExamOptions: ComboboxOption[] = useMemo(
-    () => (exams || [])
-      .filter((exam) => exam.id !== selectedExamId && exam.academicYearId === selectedExam?.academicYearId)
-      .map((exam) => ({
-        value: exam.id,
-        label: exam.name,
-      })),
+    () =>
+      (exams || [])
+        .filter(
+          (exam) =>
+            exam.id !== selectedExamId && exam.academicYearId === selectedExam?.academicYearId,
+        )
+        .map((exam) => ({
+          value: exam.id,
+          label: exam.name,
+        })),
     [exams, selectedExam?.academicYearId, selectedExamId],
   );
 
@@ -607,14 +603,18 @@ export default function StudentExamReport() {
     };
   });
 
-  const { data: reportsData, isLoading: reportsLoading, isFetching: reportsFetching } = useQuery({
-    queryKey: ['student-exam-reports', selectedExamStudentIds.join(','), selectedExamId],
+  const {
+    data: reportsData,
+    isLoading: reportsLoading,
+    isFetching: reportsFetching,
+  } = useQuery({
+    queryKey: ['student-exam-reports', selectedExamStudentIds.join(','), selectedExamId, language],
     queryFn: async () => {
       if (!selectedExamStudentIds.length || !selectedExamId) return [];
 
       const reportPromises = selectedExamStudentIds.map(async (examStudentId) => {
         try {
-          const response = await examsApi.studentReport(selectedExamId, examStudentId);
+          const response = await examsApi.studentReport(selectedExamId, examStudentId, language);
           if (response && typeof response === 'object' && 'data' in response) {
             return (response as { data: StudentReportData }).data;
           }
@@ -661,11 +661,11 @@ export default function StudentExamReport() {
       return (response.cards ?? []) as CombinedReportCard[];
     },
     enabled: Boolean(
-      selectedExamStudentIds.length > 0
-      && selectedExamId
-      && selectedSecondExamId
-      && profile?.organization_id
-      && profile?.default_school_id,
+      selectedExamStudentIds.length > 0 &&
+      selectedExamId &&
+      selectedSecondExamId &&
+      profile?.organization_id &&
+      profile?.default_school_id,
     ),
     staleTime: 0,
     refetchOnWindowFocus: false,
@@ -679,7 +679,10 @@ export default function StudentExamReport() {
   useEffect(() => {
     if (!combinedErrorMessage) return;
     const translate = translateRef.current;
-    showToast.error(translateCombinedExamError(combinedErrorMessage, translate) || translate('examReports.noDataAvailable'));
+    showToast.error(
+      translateCombinedExamError(combinedErrorMessage, translate) ||
+        translate('examReports.noDataAvailable'),
+    );
   }, [combinedErrorMessage]);
 
   const handlePrint = () => {
@@ -695,7 +698,9 @@ export default function StudentExamReport() {
 
   const handleStudentToggle = (examStudentId: string) => {
     setSelectedExamStudentIds((prev) =>
-      prev.includes(examStudentId) ? prev.filter((id) => id !== examStudentId) : [...prev, examStudentId]
+      prev.includes(examStudentId)
+        ? prev.filter((id) => id !== examStudentId)
+        : [...prev, examStudentId],
     );
   };
 
@@ -730,134 +735,154 @@ export default function StudentExamReport() {
 
       <FilterPanel title={t('library.selectStudent')} className="no-print">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
-              <Label htmlFor="exam">{t('examReports.selectExam')}</Label>
-              <Combobox
-                options={examOptions}
-                value={selectedExamId}
-                onValueChange={(val) => {
-                  setSelectedExamId(val);
-                }}
-                placeholder={t('examReports.selectExamPrompt')}
-                searchPlaceholder={t('events.search') || 'Search...'}
-                emptyText={t('exams.noExams') || 'No exams'}
-                disabled={examsLoading}
-              />
-              {selectedExam && academicYear && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {t('examReports.academicYear')}: <span className="font-semibold">{academicYear.name}</span>
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="second-exam">{t('studentReportCard.combineWithExam')}</Label>
-              <Combobox
-                options={[
-                  { value: '__single__', label: t('studentReportCard.singleExamCard') },
-                  ...secondExamOptions,
-                ]}
-                value={selectedSecondExamId || '__single__'}
-                onValueChange={(val) => setSelectedSecondExamId(val === '__single__' ? '' : val)}
-                placeholder={t('studentReportCard.singleExamCard')}
-                searchPlaceholder={t('events.search')}
-                emptyText={t('exams.noExams')}
-                disabled={!selectedExamId || examsLoading}
-              />
-              <p className="text-xs text-muted-foreground">{t('studentReportCard.combineHint')}</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="class">{t('search.class')}</Label>
-              <Combobox
-                options={classOptions}
-                value={selectedClassId}
-                onValueChange={setSelectedClassId}
-                placeholder={selectedExamId ? t('events.selectClass') || 'Select class' : t('examReports.selectExamFirst') || 'Select an exam first'}
-                searchPlaceholder={t('events.search') || 'Search...'}
-                emptyText={
-                  selectedExamId
-                    ? (examClassesLoading ? t('common.loading') || 'Loading...' : t('classes.noClasses') || 'No classes')
-                    : t('examReports.selectExamFirst') || 'Select an exam first'
-                }
-                disabled={!selectedExamId || examClassesLoading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="student">{t('library.selectStudent')}</Label>
-                {studentOptions.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSelectAll}
-                    className="h-7 text-xs"
-                  >
-                    {selectedExamStudentIds.length === studentOptions.length ? t('events.deselectAll') || 'Deselect All' : t('events.selectAll') || 'Select All'}
-                  </Button>
-                )}
-              </div>
-              <div className="max-h-60 overflow-y-auto border rounded-md p-2 space-y-2">
-                {selectedClassId ? (
-                  examStudentsLoading ? (
-                    <div className="text-sm text-muted-foreground text-center py-4">{t('common.loading') || 'Loading...'}</div>
-                  ) : studentOptions.length > 0 ? (
-                    studentOptions.map((option, optIdx) => {
-                      const isSelected = selectedExamStudentIds.includes(option.value);
-                      return (
-                        <div key={option.value || `student-option-${optIdx}`} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`student-${option.value}`}
-                            checked={isSelected}
-                            onCheckedChange={() => handleStudentToggle(option.value)}
-                          />
-                          <label
-                            htmlFor={`student-${option.value}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                          >
-                            {option.label}
-                          </label>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-sm text-muted-foreground text-center py-4">{t('students.noStudents') || 'No students'}</div>
-                  )
-                ) : (
-                  <div className="text-sm text-muted-foreground text-center py-4">
-                    {selectedExamId ? t('examReports.selectClassFirst') || 'Select a class first' : t('examReports.selectExamFirst') || 'Select an exam first'}
-                  </div>
-                )}
-              </div>
-              {selectedExamStudentIds.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {selectedExamStudentIds.length} {t('events.selected') || 'selected'}
-                </p>
-              )}
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="exam">{t('examReports.selectExam')}</Label>
+            <Combobox
+              options={examOptions}
+              value={selectedExamId}
+              onValueChange={(val) => {
+                setSelectedExamId(val);
+              }}
+              placeholder={t('examReports.selectExamPrompt')}
+              searchPlaceholder={t('events.search') || 'Search...'}
+              emptyText={t('exams.noExams') || 'No exams'}
+              disabled={examsLoading}
+            />
+            {selectedExam && academicYear && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('examReports.academicYear')}:{' '}
+                <span className="font-semibold">{academicYear.name}</span>
+              </p>
+            )}
           </div>
 
-          {selectedExamStudentIds.length > 0 && selectedExamId && (
-            <div className="flex gap-2 mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-shrink-0"
-                onClick={handlePrint}
-                disabled={exportPdf.isPending || exportPdf.isPolling}
-                aria-label={selectedSecondExamId ? t('studentReportCard.exportCombinedPdf') : t('studentReportCard.printCard')}
-              >
-                <Printer className="h-4 w-4" />
-                <span className="ms-2 hidden sm:inline">
-                  {exportPdf.isPolling
-                    ? t('studentReportCard.generating')
-                    : selectedSecondExamId
-                      ? t('studentReportCard.exportCombinedPdf')
-                      : t('studentReportCard.printCard')}
-                </span>
-              </Button>
-              {!selectedSecondExamId && reportsData && reportsData.length > 0 && reportsData.some(r => r !== null) && (
+          <div className="space-y-2">
+            <Label htmlFor="second-exam">{t('studentReportCard.combineWithExam')}</Label>
+            <Combobox
+              options={[
+                { value: '__single__', label: t('studentReportCard.singleExamCard') },
+                ...secondExamOptions,
+              ]}
+              value={selectedSecondExamId || '__single__'}
+              onValueChange={(val) => setSelectedSecondExamId(val === '__single__' ? '' : val)}
+              placeholder={t('studentReportCard.singleExamCard')}
+              searchPlaceholder={t('events.search')}
+              emptyText={t('exams.noExams')}
+              disabled={!selectedExamId || examsLoading}
+            />
+            <p className="text-xs text-muted-foreground">{t('studentReportCard.combineHint')}</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="class">{t('search.class')}</Label>
+            <Combobox
+              options={classOptions}
+              value={selectedClassId}
+              onValueChange={setSelectedClassId}
+              placeholder={
+                selectedExamId
+                  ? t('events.selectClass') || 'Select class'
+                  : t('examReports.selectExamFirst') || 'Select an exam first'
+              }
+              searchPlaceholder={t('events.search') || 'Search...'}
+              emptyText={
+                selectedExamId
+                  ? examClassesLoading
+                    ? t('common.loading') || 'Loading...'
+                    : t('classes.noClasses') || 'No classes'
+                  : t('examReports.selectExamFirst') || 'Select an exam first'
+              }
+              disabled={!selectedExamId || examClassesLoading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="student">{t('library.selectStudent')}</Label>
+              {studentOptions.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={handleSelectAll} className="h-7 text-xs">
+                  {selectedExamStudentIds.length === studentOptions.length
+                    ? t('events.deselectAll') || 'Deselect All'
+                    : t('events.selectAll') || 'Select All'}
+                </Button>
+              )}
+            </div>
+            <div className="max-h-60 overflow-y-auto border rounded-md p-2 space-y-2">
+              {selectedClassId ? (
+                examStudentsLoading ? (
+                  <div className="text-sm text-muted-foreground text-center py-4">
+                    {t('common.loading') || 'Loading...'}
+                  </div>
+                ) : studentOptions.length > 0 ? (
+                  studentOptions.map((option, optIdx) => {
+                    const isSelected = selectedExamStudentIds.includes(option.value);
+                    return (
+                      <div
+                        key={option.value || `student-option-${optIdx}`}
+                        className="flex items-center space-x-2"
+                      >
+                        <Checkbox
+                          id={`student-${option.value}`}
+                          checked={isSelected}
+                          onCheckedChange={() => handleStudentToggle(option.value)}
+                        />
+                        <label
+                          htmlFor={`student-${option.value}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                        >
+                          {option.label}
+                        </label>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-sm text-muted-foreground text-center py-4">
+                    {t('students.noStudents') || 'No students'}
+                  </div>
+                )
+              ) : (
+                <div className="text-sm text-muted-foreground text-center py-4">
+                  {selectedExamId
+                    ? t('examReports.selectClassFirst') || 'Select a class first'
+                    : t('examReports.selectExamFirst') || 'Select an exam first'}
+                </div>
+              )}
+            </div>
+            {selectedExamStudentIds.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {selectedExamStudentIds.length} {t('events.selected') || 'selected'}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {selectedExamStudentIds.length > 0 && selectedExamId && (
+          <div className="flex gap-2 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-shrink-0"
+              onClick={handlePrint}
+              disabled={exportPdf.isPending || exportPdf.isPolling}
+              aria-label={
+                selectedSecondExamId
+                  ? t('studentReportCard.exportCombinedPdf')
+                  : t('studentReportCard.printCard')
+              }
+            >
+              <Printer className="h-4 w-4" />
+              <span className="ms-2 hidden sm:inline">
+                {exportPdf.isPolling
+                  ? t('studentReportCard.generating')
+                  : selectedSecondExamId
+                    ? t('studentReportCard.exportCombinedPdf')
+                    : t('studentReportCard.printCard')}
+              </span>
+            </Button>
+            {!selectedSecondExamId &&
+              reportsData &&
+              reportsData.length > 0 &&
+              reportsData.some((r) => r !== null) && (
                 <ReportExportButtons
                   data={reportsData.filter((r): r is StudentReportData => r !== null)}
                   columns={[
@@ -865,7 +890,10 @@ export default function StudentExamReport() {
                     { key: 'rollNumber', label: t('students.rollNo') || 'Roll Number' },
                     { key: 'className', label: t('search.class') || 'Class' },
                     { key: 'subjects', label: t('events.subjects') || 'Subjects' },
-                    { key: 'absenceCount', label: t('examAbsencePenalty.absenceCount') || 'Absences' },
+                    {
+                      key: 'absenceCount',
+                      label: t('examAbsencePenalty.absenceCount') || 'Absences',
+                    },
                     { key: 'marksCut', label: t('examAbsencePenalty.marksCut') || 'Marks cut' },
                     { key: 'totalMarks', label: t('examReports.totalMarks') || 'Total Marks' },
                     { key: 'percentage', label: t('examReports.percentage') || 'Percentage' },
@@ -874,41 +902,48 @@ export default function StudentExamReport() {
                   ]}
                   reportKey="student_report_card_summary"
                   title={`${t('nav.studentReportCard') || 'Student Report Card'} - ${selectedExam?.name || ''}`}
-                  transformData={(data) => data.map((report: StudentReportData) => {
-                    const subjectsList = (report.subjects || []).map((s) => {
-                      const subjectName = s.subject?.name || s.name || '-';
-                      const marks = s.marks;
-                      const isAbsent = s.is_absent;
-                      if (isAbsent) {
-                        return `${subjectName}: ${t('examReports.absent') || 'Absent'}`;
-                      }
-                      if (marks?.obtained !== null && marks?.obtained !== undefined) {
-                        return `${subjectName}: ${marks.obtained}/${marks.total}`;
-                      }
-                      return `${subjectName}: -`;
-                    }).join('; ');
+                  transformData={(data) =>
+                    data.map((report: StudentReportData) => {
+                      const subjectsList = (report.subjects || [])
+                        .map((s) => {
+                          const subjectName = s.subject?.name || s.name || '-';
+                          const marks = s.marks;
+                          const isAbsent = s.is_absent;
+                          if (isAbsent) {
+                            return `${subjectName}: ${t('examReports.absent') || 'Absent'}`;
+                          }
+                          if (marks?.obtained !== null && marks?.obtained !== undefined) {
+                            return `${subjectName}: ${marks.obtained}/${marks.total}`;
+                          }
+                          return `${subjectName}: -`;
+                        })
+                        .join('; ');
 
-                    return {
-                      studentName: report.student?.full_name || '-',
-                      rollNumber: report.student?.roll_number || '-',
-                      className: report.student?.class
-                        ? `${report.student.class}${report.student.section ? ` - ${report.student.section}` : ''}`
-                        : '-',
-                      subjects: subjectsList,
-                      absenceCount: report.summary?.absence_count ?? '-',
-                      marksCut: report.summary?.marks_cut ?? '-',
-                      totalMarks: `${report.summary?.total_marks_obtained || 0}/${report.summary?.total_maximum_marks || 0}`,
-                      percentage: report.summary?.overall_percentage !== null && report.summary?.overall_percentage !== undefined
-                        ? `${report.summary.overall_percentage.toFixed(2)}%`
-                        : '-',
-                      grade: report.summary?.overall_grade || '-',
-                      result: report.summary?.overall_result === 'Pass'
-                        ? (t('events.pass') || 'Pass')
-                        : report.summary?.overall_result === 'Incomplete'
-                          ? (t('examReports.incomplete') || 'Incomplete')
-                          : (t('events.fail') || 'Fail'),
-                    };
-                  })}
+                      return {
+                        studentName: report.student?.full_name || '-',
+                        rollNumber: report.student?.roll_number || '-',
+                        className: report.student?.class
+                          ? `${report.student.class}${report.student.section ? ` - ${report.student.section}` : ''}`
+                          : '-',
+                        subjects: subjectsList,
+                        absenceCount: report.summary?.absence_count ?? '-',
+                        marksCut: report.summary?.marks_cut ?? '-',
+                        totalMarks: `${report.summary?.total_marks_obtained || 0}/${report.summary?.total_maximum_marks || 0}`,
+                        percentage:
+                          report.summary?.overall_percentage !== null &&
+                          report.summary?.overall_percentage !== undefined
+                            ? `${report.summary.overall_percentage.toFixed(2)}%`
+                            : '-',
+                        grade: report.summary?.overall_grade || '-',
+                        result:
+                          report.summary?.overall_result === 'Pass'
+                            ? t('events.pass') || 'Pass'
+                            : report.summary?.overall_result === 'Incomplete'
+                              ? t('examReports.incomplete') || 'Incomplete'
+                              : t('events.fail') || 'Fail',
+                      };
+                    })
+                  }
                   buildFiltersSummary={() => {
                     const parts: string[] = [];
                     if (selectedExam?.name) parts.push(`Exam: ${selectedExam.name}`);
@@ -921,8 +956,8 @@ export default function StudentExamReport() {
                   disabled={!reportsData || reportsData.length === 0}
                 />
               )}
-            </div>
-          )}
+          </div>
+        )}
       </FilterPanel>
 
       {selectedExamStudentIds.length > 0 && selectedExamId && selectedSecondExamId && (
@@ -943,8 +978,10 @@ export default function StudentExamReport() {
                 <div className="space-y-2 text-center">
                   <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
                   <p className="text-muted-foreground">
-                    {translateCombinedExamError(combinedError instanceof Error ? combinedError.message : '', t)
-                      || t('examReports.noDataAvailable')}
+                    {translateCombinedExamError(
+                      combinedError instanceof Error ? combinedError.message : '',
+                      t,
+                    ) || t('examReports.noDataAvailable')}
                   </p>
                 </div>
               </CardContent>
@@ -991,7 +1028,9 @@ export default function StudentExamReport() {
                     <CardContent className="flex items-center justify-center py-12">
                       <div className="text-center space-y-2">
                         <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
-                        <p className="text-muted-foreground">{t('examReports.noDataAvailable') || 'No data available'}</p>
+                        <p className="text-muted-foreground">
+                          {t('examReports.noDataAvailable') || 'No data available'}
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
@@ -1006,8 +1045,6 @@ export default function StudentExamReport() {
                     academicYear={academicYear}
                     schoolName={school?.schoolName}
                     organizationName={organization?.name}
-                    t={t}
-                    isRTL={isRTL}
                   />
                 </div>
               );
@@ -1017,7 +1054,10 @@ export default function StudentExamReport() {
       )}
 
       <ReportProgressDialog
-        open={exportDialogOpen && (exportPdf.isPending || exportPdf.isPolling || exportPdf.status !== null)}
+        open={
+          exportDialogOpen &&
+          (exportPdf.isPending || exportPdf.isPolling || exportPdf.status !== null)
+        }
         onOpenChange={(open) => {
           setExportDialogOpen(open);
           if (!open) {

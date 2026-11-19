@@ -54,7 +54,7 @@ class CombinedExamResultCardController extends Controller
             return response()->json(['error' => 'No enrolled students found'], 404);
         }
 
-        $language = $this->language($validated['language'] ?? 'en');
+        $language = $this->language($validated['language'] ?? 'ar');
         $calendar = (string) ($validated['calendar_preference'] ?? 'jalali');
 
         try {
@@ -109,7 +109,7 @@ class CombinedExamResultCardController extends Controller
             return response()->json(['error' => 'No enrolled students found for export'], 404);
         }
 
-        $language = $this->language($validated['language'] ?? 'ps');
+        $language = $this->language($validated['language'] ?? 'ar');
         $calendar = (string) ($validated['calendar_preference'] ?? 'jalali');
 
         try {

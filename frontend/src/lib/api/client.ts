@@ -1,6 +1,6 @@
 /**
  * Laravel API Client
- * 
+ *
  * Pagination Support:
  * - Add `page?: number` and `per_page?: number` to list method params
  * - Backend should return PaginatedResponse<T> structure when pagination params are provided
@@ -13,7 +13,8 @@ import { DESKTOP_IPC_CHANNELS, type DesktopIpcChannel } from '@/lib/desktop/chan
 // Use relative path in dev (via Vite proxy) or full URL in production
 // In development, Vite proxy handles /api -> http://localhost:8000/api
 // This eliminates CORS preflight overhead
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
+const API_URL =
+  import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8000/api');
 
 export interface Profile {
   id: string;
@@ -42,7 +43,9 @@ export function parseContentDispositionFilename(header: string | null): string |
 
   const utf8Match = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(header);
   const plainMatch = /filename\s*=\s*("?)([^";]+)\1/i.exec(header);
-  let raw = utf8Match?.[1] ? decodeURIComponent(utf8Match[1].trim()) : plainMatch?.[2]?.trim() || null;
+  let raw = utf8Match?.[1]
+    ? decodeURIComponent(utf8Match[1].trim())
+    : plainMatch?.[2]?.trim() || null;
   if (!raw) return null;
 
   raw = raw.replace(/["']/g, '').split(/[/\\]/).pop()?.trim() || raw;
@@ -109,12 +112,11 @@ class ApiClient {
         return url.toString();
       }
 
-
       Object.entries(params).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           if (Array.isArray(value)) {
             // Laravel expects array parameters in format: key[]=value1&key[]=value2
-            value.forEach(v => {
+            value.forEach((v) => {
               // Convert booleans to 1/0 for better Laravel compatibility
               const paramValue = typeof v === 'boolean' ? (v ? '1' : '0') : String(v);
               url.searchParams.append(`${key}[]`, paramValue);
@@ -133,26 +135,25 @@ class ApiClient {
       });
     }
 
-
     return url.toString();
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestOptions = {}
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     // For school-scoped modules, automatically apply the selected school for users
     // who can switch school context. Org-finance is organization-only (school_id=null);
     // never add school_id to org-finance requests or the backend may 500.
     const isOrgFinanceRoute = endpoint.startsWith('/org-finance/');
     const isOrgHrRoute = endpoint.startsWith('/org-hr/');
     const isPlatformRoute = endpoint.startsWith('/platform/');
-    const skipSchoolIdForOrgRoute =
-      isOrgHrRoute && (options.method === 'GET' || !options.method);
+    const skipSchoolIdForOrgRoute = isOrgHrRoute && (options.method === 'GET' || !options.method);
     const shouldAutoScopeToSelectedSchool =
       !isOrgFinanceRoute && !isPlatformRoute && !skipSchoolIdForOrgRoute;
 
-    if (typeof window !== 'undefined' && !options.params?.school_id && shouldAutoScopeToSelectedSchool) {
+    if (
+      typeof window !== 'undefined' &&
+      !options.params?.school_id &&
+      shouldAutoScopeToSelectedSchool
+    ) {
       // Check if user has schools_access_all permission (stored in localStorage by SchoolContext)
       const hasSchoolsAccessAll = localStorage.getItem('has_schools_access_all') === 'true';
       const selectedSchoolId = localStorage.getItem('selected_school_id');
@@ -185,7 +186,11 @@ class ApiClient {
 
     // Public website: in dev/testing, backend resolves school from query param.
     // Pass school_id when visiting public site with ?school_id= (stored in sessionStorage by PublicLayout).
-    if (typeof window !== 'undefined' && endpoint.startsWith('/public/website/') && !options.params?.school_id) {
+    if (
+      typeof window !== 'undefined' &&
+      endpoint.startsWith('/public/website/') &&
+      !options.params?.school_id
+    ) {
       const publicSchoolId = sessionStorage.getItem('public_website_school_id');
       if (publicSchoolId) {
         if (!options.params) {
@@ -217,7 +222,7 @@ class ApiClient {
     const url = this.buildUrl(endpoint, params);
 
     const headers: HeadersInit = {
-      'Accept': 'application/json',
+      Accept: 'application/json',
       ...fetchOptions.headers,
     };
 
@@ -230,7 +235,6 @@ class ApiClient {
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
-
 
     try {
       const response = await fetch(url, {
@@ -256,7 +260,8 @@ class ApiClient {
           try {
             const text = await response.text();
             // Try to extract error message from HTML if it's a PHP error
-            const errorMatch = text.match(/<b>(.*?)<\/b>/i) || text.match(/Fatal error: (.*?)(?:\n|<)/i);
+            const errorMatch =
+              text.match(/<b>(.*?)<\/b>/i) || text.match(/Fatal error: (.*?)(?:\n|<)/i);
             if (errorMatch) {
               error = { message: `Server error: ${errorMatch[1]}` };
             } else {
@@ -269,16 +274,18 @@ class ApiClient {
 
         // Suppress console errors for expected 401 when no token (user not logged in)
         // This is normal behavior, not an error
-        const isExpectedUnauth = response.status === 401 && !hasToken && endpoint.includes('/auth/');
+        const isExpectedUnauth =
+          response.status === 401 && !hasToken && endpoint.includes('/auth/');
 
         // Handle 429 rate limit (login and other endpoints)
         if (response.status === 429) {
           const retryAfter = response.headers.get('Retry-After');
           const minutes = retryAfter ? Math.ceil(parseInt(retryAfter, 10) / 60) : null;
           const rateLimitMsg = error.message || error.error || 'Too many requests.';
-          const userMsg = minutes != null && !isNaN(minutes)
-            ? `Too many login attempts. Please try again in ${minutes} minute(s).`
-            : rateLimitMsg;
+          const userMsg =
+            minutes != null && !isNaN(minutes)
+              ? `Too many login attempts. Please try again in ${minutes} minute(s).`
+              : rateLimitMsg;
           const rateLimitError = new Error(userMsg);
           (rateLimitError as any).status = 429;
           (rateLimitError as any).retryAfter = retryAfter;
@@ -294,7 +301,7 @@ class ApiClient {
         // For validation errors (400 or 422), include details if available
         if (response.status === 400 || response.status === 422) {
           const validationErrors = error.details || error.errors;
-          
+
           // Extract the first error message from the errors object for better frontend display
           let firstErrorMessage = '';
           if (validationErrors && typeof validationErrors === 'object') {
@@ -308,8 +315,9 @@ class ApiClient {
               }
             }
           }
-          
-          let errorMessage = firstErrorMessage || error.message || error.error || 'Validation failed';
+
+          let errorMessage =
+            firstErrorMessage || error.message || error.error || 'Validation failed';
           // Login lockout: show user-friendly message; keep backend message if it includes "minute(s)" so user sees countdown
           if (endpoint.includes('/auth/login') && error.locked_until) {
             const backendHasTime = (error.message || '').toLowerCase().includes('minute');
@@ -320,7 +328,8 @@ class ApiClient {
                 const until = new Date(error.locked_until);
                 errorMessage = `Account locked until ${until.toLocaleString()}. Use Forgot password to reset.`;
               } catch {
-                errorMessage = error.message || error.error || 'Account locked. Use Forgot password to reset.';
+                errorMessage =
+                  error.message || error.error || 'Account locked. Use Forgot password to reset.';
               }
             }
           }
@@ -330,17 +339,19 @@ class ApiClient {
           if (endpoint.includes('/auth/login') && error.locked_until) {
             (validationError as any).locked_until = error.locked_until;
           }
-          
+
           // Attach errors object so hooks can access it
           (validationError as any).errors = validationErrors || {};
           (validationError as any).status = response.status;
-          
+
           throw validationError;
         }
 
         // Handle 402 subscription errors (feature not available, limit reached, etc.)
         if (response.status === 402) {
-          const subscriptionError = new Error(error.message || error.error || 'Subscription required');
+          const subscriptionError = new Error(
+            error.message || error.error || 'Subscription required',
+          );
           // Attach subscription-specific data so components can handle it
           (subscriptionError as any).isSubscriptionError = true;
           (subscriptionError as any).code = error.code; // e.g., 'NO_SUBSCRIPTION', 'LIMIT_REACHED', 'FEATURE_NOT_AVAILABLE'
@@ -369,20 +380,22 @@ class ApiClient {
               lastEventTime[eventKey] = now;
               (window as any).__lastSubscriptionErrorTime = lastEventTime;
 
-              window.dispatchEvent(new CustomEvent('subscription-error', {
-                detail: {
-                  code: error.code,
-                  message: error.message || error.error,
-                  resourceKey: error.resource_key,
-                  featureKey: error.feature_key,
-                  missingDependencies: error.missing_dependencies,
-                  requiredPlan: error.required_plan,
-                  current: error.current,
-                  limit: error.limit,
-                  subscriptionStatus: error.subscription_status,
-                  accessLevel: error.access_level,
-                }
-              }));
+              window.dispatchEvent(
+                new CustomEvent('subscription-error', {
+                  detail: {
+                    code: error.code,
+                    message: error.message || error.error,
+                    resourceKey: error.resource_key,
+                    featureKey: error.feature_key,
+                    missingDependencies: error.missing_dependencies,
+                    requiredPlan: error.required_plan,
+                    current: error.current,
+                    limit: error.limit,
+                    subscriptionStatus: error.subscription_status,
+                    accessLevel: error.access_level,
+                  },
+                }),
+              );
             }
           }
 
@@ -403,7 +416,10 @@ class ApiClient {
         if (response.status === 503) {
           // Extract maintenance message from Laravel's maintenance mode response
           // Laravel returns JSON with 'message' field when Accept: application/json header is present
-          const maintenanceMessage = error.message || error.error || 'We are performing scheduled maintenance. We\'ll be back soon!';
+          const maintenanceMessage =
+            error.message ||
+            error.error ||
+            "We are performing scheduled maintenance. We'll be back soon!";
           const retryAfter = error.retry_after || error.retry || null;
           const scheduledEnd = error.scheduled_end || error.scheduled_end_at || null;
 
@@ -422,13 +438,15 @@ class ApiClient {
             if (!lastEventTime || now - lastEventTime > 2000) {
               (window as any).__lastMaintenanceErrorTime = now;
 
-              window.dispatchEvent(new CustomEvent('maintenance-mode', {
-                detail: {
-                  message: maintenanceMessage,
-                  retryAfter,
-                  scheduledEnd,
-                }
-              }));
+              window.dispatchEvent(
+                new CustomEvent('maintenance-mode', {
+                  detail: {
+                    message: maintenanceMessage,
+                    retryAfter,
+                    scheduledEnd,
+                  },
+                }),
+              );
             }
           }
 
@@ -468,7 +486,8 @@ class ApiClient {
 
         // Create error but don't log expected 401s
         // Laravel may return error in 'error' field or 'message' field
-        const errorMessage = error.message || error.error || `HTTP error! status: ${response.status}`;
+        const errorMessage =
+          error.message || error.error || `HTTP error! status: ${response.status}`;
         const errorObj = new Error(errorMessage);
         // Attach status code to error object for easier handling
         (errorObj as any).status = response.status;
@@ -490,13 +509,16 @@ class ApiClient {
       if (!contentType.includes('application/json')) {
         // If response is not JSON, try to get text and throw meaningful error
         const text = await response.text();
-        throw new Error(`Expected JSON response but got ${contentType}. Response: ${text.substring(0, 200)}`);
+        throw new Error(
+          `Expected JSON response but got ${contentType}. Response: ${text.substring(0, 200)}`,
+        );
       }
 
       return response.json();
     } catch (error: any) {
       // Detect DevTools request blocking
-      const isDevToolsBlocked = error.message?.includes('blocked') ||
+      const isDevToolsBlocked =
+        error.message?.includes('blocked') ||
         error.message?.toLowerCase().includes('devtools') ||
         (error.name === 'TypeError' && error.message?.includes('Failed to fetch'));
 
@@ -513,12 +535,16 @@ class ApiClient {
       }
 
       // Handle network errors
-      if (error.message?.includes('Failed to fetch') ||
+      if (
+        error.message?.includes('Failed to fetch') ||
         error.message?.includes('NetworkError') ||
         error.message?.includes('blocked') ||
-        error.name === 'TypeError') {
+        error.name === 'TypeError'
+      ) {
         // Check if it's a CORS or network issue
-        const isNetworkError = !error.response && (error.message?.includes('Failed to fetch') || error.name === 'TypeError');
+        const isNetworkError =
+          !error.response &&
+          (error.message?.includes('Failed to fetch') || error.name === 'TypeError');
         if (isNetworkError) {
           const errorMessage = `Network error: Unable to connect to API server at ${this.baseUrl}`;
           throw new Error(errorMessage);
@@ -530,7 +556,7 @@ class ApiClient {
 
   async requestFile(
     endpoint: string,
-    options: RequestOptions = {}
+    options: RequestOptions = {},
   ): Promise<{ blob: Blob; filename: string | null }> {
     const { params, ...fetchOptions } = options;
     const url = this.buildUrl(endpoint, params);
@@ -597,7 +623,9 @@ class ApiClient {
    */
   async getBlobForPrivateUrl(fullOrRelativeUrl: string): Promise<Blob> {
     const pathMatch = fullOrRelativeUrl.match(/\/api(\/storage\/download\/[^?#]+)/);
-    const endpoint = pathMatch ? pathMatch[1] : fullOrRelativeUrl.replace(/^.*\/api/, '') || '/storage/download/';
+    const endpoint = pathMatch
+      ? pathMatch[1]
+      : fullOrRelativeUrl.replace(/^.*\/api/, '') || '/storage/download/';
     const { blob } = await this.requestFile(endpoint);
     return blob;
   }
@@ -657,7 +685,7 @@ function shouldUseLocal(): boolean {
 
 async function desktopInvoke<TResult, TPayload = unknown>(
   channel: DesktopIpcChannel,
-  payload?: TPayload
+  payload?: TPayload,
 ): Promise<TResult> {
   if (typeof window === 'undefined' || !window.nazimDesktop?.invoke) {
     throw new Error('Desktop bridge is not available');
@@ -689,7 +717,7 @@ export const authApi = {
   login: async (
     email: string,
     password: string,
-    options?: { loginContext?: 'main_app' | 'platform_admin' }
+    options?: { loginContext?: 'main_app' | 'platform_admin' },
   ): Promise<{ user: any; token: string; profile?: any }> => {
     const headers: Record<string, string> = {};
     if (options?.loginContext === 'platform_admin') {
@@ -698,12 +726,11 @@ export const authApi = {
     const response = await apiClient.post<{ user: any; token: string; profile?: any }>(
       '/auth/login',
       { email, password },
-      { headers }
+      { headers },
     );
     apiClient.setToken(response.token);
     return response;
   },
-
 
   logout: async () => {
     await apiClient.post('/auth/logout');
@@ -732,7 +759,14 @@ export const authApi = {
   },
 
   /** Recent logins (devices) for the Security settings page. */
-  getSecurityOverview: async (): Promise<{ devices: Array<{ id: string; device_name: string; ip_address: string | null; last_seen_at: string | null }> }> => {
+  getSecurityOverview: async (): Promise<{
+    devices: Array<{
+      id: string;
+      device_name: string;
+      ip_address: string | null;
+      last_seen_at: string | null;
+    }>;
+  }> => {
     return apiClient.get('/auth/security-overview');
   },
 
@@ -743,7 +777,10 @@ export const authApi = {
     full_name: string;
     organization_id?: string;
   }) => {
-    const response = await apiClient.post<{ user: any; token: string; profile?: any }>('/auth/register', data);
+    const response = await apiClient.post<{ user: any; token: string; profile?: any }>(
+      '/auth/register',
+      data,
+    );
     if (response.token) {
       apiClient.setToken(response.token);
     }
@@ -781,7 +818,12 @@ export const organizationsApi = {
     return apiClient.get(`/organizations/${id}/statistics`);
   },
 
-  preview: async (data?: { name?: string; slug?: string; admin_email?: string; admin_full_name?: string }) => {
+  preview: async (data?: {
+    name?: string;
+    slug?: string;
+    admin_email?: string;
+    admin_full_name?: string;
+  }) => {
     return apiClient.get('/organizations/preview', data);
   },
 
@@ -835,7 +877,12 @@ export const organizationDashboardApi = {
 // Profiles API
 
 export const orgHrApi = {
-  staff: async (params?: { search?: string; school_id?: string; status?: string; per_page?: number }) => {
+  staff: async (params?: {
+    search?: string;
+    school_id?: string;
+    status?: string;
+    per_page?: number;
+  }) => {
     return apiClient.get('/org-hr/staff', params);
   },
 
@@ -843,7 +890,12 @@ export const orgHrApi = {
     return apiClient.get(`/org-hr/staff/${staffId}/assignments`);
   },
 
-  assignments: async (params?: { staff_id?: string; school_id?: string; status?: string; per_page?: number }) => {
+  assignments: async (params?: {
+    staff_id?: string;
+    school_id?: string;
+    status?: string;
+    per_page?: number;
+  }) => {
     return apiClient.get('/org-hr/assignments', params);
   },
 
@@ -870,7 +922,7 @@ export const orgHrApi = {
       end_date?: string | null;
       status?: string;
       notes?: string | null;
-    }
+    },
   ) => {
     return apiClient.put(`/org-hr/assignments/${id}`, data);
   },
@@ -886,7 +938,8 @@ export const orgHrApi = {
   createCompensationProfile: async (data: {
     staff_id: string;
     base_salary: number;
-    pay_frequency: 'monthly' | 'semi_monthly' | 'semimonthly' | 'biweekly' | 'weekly' | 'daily' | 'annually';
+    pay_frequency:
+      'monthly' | 'semi_monthly' | 'semimonthly' | 'biweekly' | 'weekly' | 'daily' | 'annually';
     currency: string;
     grade?: string | null;
     step?: string | null;
@@ -898,17 +951,21 @@ export const orgHrApi = {
     return apiClient.post('/org-hr/compensation/profiles', data);
   },
 
-  updateCompensationProfile: async (id: string, data: {
-    base_salary?: number;
-    pay_frequency?: 'monthly' | 'semi_monthly' | 'semimonthly' | 'biweekly' | 'weekly' | 'daily' | 'annually';
-    currency?: string;
-    grade?: string | null;
-    step?: string | null;
-    effective_from?: string;
-    effective_to?: string | null;
-    status?: 'active' | 'inactive';
-    legacy_salary_notes?: string | null;
-  }) => {
+  updateCompensationProfile: async (
+    id: string,
+    data: {
+      base_salary?: number;
+      pay_frequency?:
+        'monthly' | 'semi_monthly' | 'semimonthly' | 'biweekly' | 'weekly' | 'daily' | 'annually';
+      currency?: string;
+      grade?: string | null;
+      step?: string | null;
+      effective_from?: string;
+      effective_to?: string | null;
+      status?: 'active' | 'inactive';
+      legacy_salary_notes?: string | null;
+    },
+  ) => {
     return apiClient.put(`/org-hr/compensation/profiles/${id}`, data);
   },
 
@@ -920,11 +977,20 @@ export const orgHrApi = {
     return apiClient.get('/org-hr/payroll/periods');
   },
 
-  createPayrollPeriod: async (data: { name: string; period_start: string; period_end: string; pay_date?: string | null }) => {
+  createPayrollPeriod: async (data: {
+    name: string;
+    period_start: string;
+    period_end: string;
+    pay_date?: string | null;
+  }) => {
     return apiClient.post('/org-hr/payroll/periods', data);
   },
 
-  payrollRuns: async (params?: { payroll_period_id?: string; status?: string; per_page?: number }) => {
+  payrollRuns: async (params?: {
+    payroll_period_id?: string;
+    status?: string;
+    per_page?: number;
+  }) => {
     return apiClient.get('/org-hr/payroll/runs', params);
   },
 
@@ -946,11 +1012,11 @@ export const orgHrApi = {
 
   markPayrollRunPaid: async (
     id: string,
-    data: { account_id: string; expense_category_id?: string }
+    data: { account_id: string; expense_category_id?: string },
   ) =>
     apiClient.post<{ id: string; expense_entry_id: string; paid_at: string }>(
       `/org-hr/payroll/runs/${id}/mark-paid`,
-      data
+      data,
     ),
 
   analyticsOverview: async () => {
@@ -995,12 +1061,15 @@ export const permissionsApi = {
     return apiClient.post('/permissions', data);
   },
 
-  update: async (id: string, data: {
-    name?: string;
-    resource?: string;
-    action?: string;
-    description?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      resource?: string;
+      action?: string;
+      description?: string | null;
+    },
+  ) => {
     return apiClient.put(`/permissions/${id}`, data);
   },
 
@@ -1063,18 +1132,17 @@ export const rolesApi = {
     return apiClient.get(`/roles/${id}`);
   },
 
-  create: async (data: {
-    name: string;
-    description?: string | null;
-    guard_name?: string;
-  }) => {
+  create: async (data: { name: string; description?: string | null; guard_name?: string }) => {
     return apiClient.post('/roles', data);
   },
 
-  update: async (id: string, data: {
-    name?: string;
-    description?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      description?: string | null;
+    },
+  ) => {
     return apiClient.put(`/roles/${id}`, data);
   },
 
@@ -1085,10 +1153,7 @@ export const rolesApi = {
 
 // Schools API (School Branding)
 export const schoolsApi = {
-  list: async (params?: {
-    organization_id?: string;
-    is_active?: boolean;
-  }) => {
+  list: async (params?: { organization_id?: string; is_active?: boolean }) => {
     return apiClient.get('/schools', params);
   },
 
@@ -1102,9 +1167,14 @@ export const schoolsApi = {
    * @param type Logo type: 'primary', 'secondary', or 'ministry'
    * @returns Blob URL string or null if logo doesn't exist
    */
-  getLogo: async (id: string, type: 'primary' | 'secondary' | 'ministry'): Promise<string | null> => {
+  getLogo: async (
+    id: string,
+    type: 'primary' | 'secondary' | 'ministry',
+  ): Promise<string | null> => {
     try {
-      const { blob } = await apiClient.requestFile(`/schools/${id}/logos/${type}`, { method: 'GET' });
+      const { blob } = await apiClient.requestFile(`/schools/${id}/logos/${type}`, {
+        method: 'GET',
+      });
       return URL.createObjectURL(blob);
     } catch (error: any) {
       // 204 No Content means logo doesn't exist
@@ -1158,45 +1228,48 @@ export const schoolsApi = {
     return apiClient.post('/schools', data);
   },
 
-  update: async (id: string, data: {
-    school_name?: string;
-    school_name_arabic?: string;
-    school_name_pashto?: string;
-    school_address?: string;
-    school_phone?: string;
-    school_email?: string;
-    school_website?: string;
-    logo_path?: string;
-    header_image_path?: string;
-    footer_text?: string;
-    primary_color?: string;
-    secondary_color?: string;
-    accent_color?: string;
-    font_family?: string;
-    report_font_size?: string;
-    primary_logo_binary?: string; // Base64 encoded
-    primary_logo_mime_type?: string;
-    primary_logo_filename?: string;
-    primary_logo_size?: number;
-    secondary_logo_binary?: string; // Base64 encoded
-    secondary_logo_mime_type?: string;
-    secondary_logo_filename?: string;
-    secondary_logo_size?: number;
-    ministry_logo_binary?: string; // Base64 encoded
-    ministry_logo_mime_type?: string;
-    ministry_logo_filename?: string;
-    ministry_logo_size?: number;
-    primary_logo_usage?: string;
-    secondary_logo_usage?: string;
-    ministry_logo_usage?: string;
-    header_text?: string;
-    table_alternating_colors?: boolean;
-    show_page_numbers?: boolean;
-    show_generation_date?: boolean;
-    report_logo_selection?: string;
-    calendar_preference?: string;
-    is_active?: boolean;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      school_name?: string;
+      school_name_arabic?: string;
+      school_name_pashto?: string;
+      school_address?: string;
+      school_phone?: string;
+      school_email?: string;
+      school_website?: string;
+      logo_path?: string;
+      header_image_path?: string;
+      footer_text?: string;
+      primary_color?: string;
+      secondary_color?: string;
+      accent_color?: string;
+      font_family?: string;
+      report_font_size?: string;
+      primary_logo_binary?: string; // Base64 encoded
+      primary_logo_mime_type?: string;
+      primary_logo_filename?: string;
+      primary_logo_size?: number;
+      secondary_logo_binary?: string; // Base64 encoded
+      secondary_logo_mime_type?: string;
+      secondary_logo_filename?: string;
+      secondary_logo_size?: number;
+      ministry_logo_binary?: string; // Base64 encoded
+      ministry_logo_mime_type?: string;
+      ministry_logo_filename?: string;
+      ministry_logo_size?: number;
+      primary_logo_usage?: string;
+      secondary_logo_usage?: string;
+      ministry_logo_usage?: string;
+      header_text?: string;
+      table_alternating_colors?: boolean;
+      show_page_numbers?: boolean;
+      show_generation_date?: boolean;
+      report_logo_selection?: string;
+      calendar_preference?: string;
+      is_active?: boolean;
+    },
+  ) => {
     return apiClient.put(`/schools/${id}`, data);
   },
 
@@ -1207,25 +1280,23 @@ export const schoolsApi = {
   // School Admission Rules
   getAdmissionRules: async (schoolId: string) => {
     return apiClient.get<import('@/types/api/schoolAdmissionRules').SchoolAdmissionRules>(
-      `/schools/${schoolId}/admission-rules`
+      `/schools/${schoolId}/admission-rules`,
     );
   },
 
   updateAdmissionRules: async (
     schoolId: string,
-    data: import('@/types/api/schoolAdmissionRules').SchoolAdmissionRulesUpdate
+    data: import('@/types/api/schoolAdmissionRules').SchoolAdmissionRulesUpdate,
   ) => {
     return apiClient.put<import('@/types/api/schoolAdmissionRules').SchoolAdmissionRules>(
       `/schools/${schoolId}/admission-rules`,
-      data
+      data,
     );
   },
 };
 
 export const watermarksApi = {
-  list: async (params: {
-    branding_id: string;
-  }) => {
+  list: async (params: { branding_id: string }) => {
     return apiClient.get('/watermarks', params);
   },
 
@@ -1255,24 +1326,27 @@ export const watermarksApi = {
     return apiClient.post('/watermarks', data);
   },
 
-  update: async (id: string, data: {
-    report_key?: string | null;
-    wm_type?: 'text' | 'image';
-    text?: string | null;
-    font_family?: string | null;
-    color?: string;
-    opacity?: number;
-    rotation_deg?: number;
-    scale?: number;
-    position?: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-    pos_x?: number;
-    pos_y?: number;
-    repeat_pattern?: 'none' | 'repeat' | 'repeat-x' | 'repeat-y';
-    sort_order?: number;
-    is_active?: boolean;
-    image_binary?: string; // Base64 encoded
-    image_mime?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      report_key?: string | null;
+      wm_type?: 'text' | 'image';
+      text?: string | null;
+      font_family?: string | null;
+      color?: string;
+      opacity?: number;
+      rotation_deg?: number;
+      scale?: number;
+      position?: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+      pos_x?: number;
+      pos_y?: number;
+      repeat_pattern?: 'none' | 'repeat' | 'repeat-x' | 'repeat-y';
+      sort_order?: number;
+      is_active?: boolean;
+      image_binary?: string; // Base64 encoded
+      image_mime?: string | null;
+    },
+  ) => {
     return apiClient.put(`/watermarks/${id}`, data);
   },
 
@@ -1308,15 +1382,18 @@ export const usersApi = {
     return apiClient.post('/users', data);
   },
 
-  update: async (id: string, data: {
-    full_name?: string;
-    email?: string;
-    role?: string;
-    organization_id?: string | null;
-    default_school_id?: string | null;
-    phone?: string;
-    is_active?: boolean;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      full_name?: string;
+      email?: string;
+      role?: string;
+      organization_id?: string | null;
+      default_school_id?: string | null;
+      phone?: string;
+      is_active?: boolean;
+    },
+  ) => {
     return apiClient.put(`/users/${id}`, data);
   },
 
@@ -1385,44 +1462,47 @@ export const staffApi = {
     return apiClient.post('/staff', data);
   },
 
-  update: async (id: string, data: {
-    profile_id?: string | null;
-    employee_id?: string;
-    staff_type?: string;
-    staff_type_id?: string;
-    school_id?: string | null;
-    first_name?: string;
-    father_name?: string;
-    grandfather_name?: string | null;
-    tazkira_number?: string | null;
-    birth_year?: string | null;
-    birth_date?: string | null;
-    phone_number?: string | null;
-    email?: string | null;
-    home_address?: string | null;
-    origin_province?: string | null;
-    origin_district?: string | null;
-    origin_village?: string | null;
-    current_province?: string | null;
-    current_district?: string | null;
-    current_village?: string | null;
-    religious_education?: string | null;
-    religious_university?: string | null;
-    religious_graduation_year?: string | null;
-    religious_department?: string | null;
-    modern_education?: string | null;
-    modern_school_university?: string | null;
-    modern_graduation_year?: string | null;
-    modern_department?: string | null;
-    teaching_section?: string | null;
-    position?: string | null;
-    duty?: string | null;
-    salary?: string | null;
-    status?: string;
-    picture_url?: string | null;
-    document_urls?: any[];
-    notes?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      profile_id?: string | null;
+      employee_id?: string;
+      staff_type?: string;
+      staff_type_id?: string;
+      school_id?: string | null;
+      first_name?: string;
+      father_name?: string;
+      grandfather_name?: string | null;
+      tazkira_number?: string | null;
+      birth_year?: string | null;
+      birth_date?: string | null;
+      phone_number?: string | null;
+      email?: string | null;
+      home_address?: string | null;
+      origin_province?: string | null;
+      origin_district?: string | null;
+      origin_village?: string | null;
+      current_province?: string | null;
+      current_district?: string | null;
+      current_village?: string | null;
+      religious_education?: string | null;
+      religious_university?: string | null;
+      religious_graduation_year?: string | null;
+      religious_department?: string | null;
+      modern_education?: string | null;
+      modern_school_university?: string | null;
+      modern_graduation_year?: string | null;
+      modern_department?: string | null;
+      teaching_section?: string | null;
+      position?: string | null;
+      duty?: string | null;
+      salary?: string | null;
+      status?: string;
+      picture_url?: string | null;
+      document_urls?: any[];
+      notes?: string | null;
+    },
+  ) => {
     return apiClient.put(`/staff/${id}`, data);
   },
 
@@ -1430,9 +1510,7 @@ export const staffApi = {
     return apiClient.delete(`/staff/${id}`);
   },
 
-  stats: async (params?: {
-    organization_id?: string;
-  }) => {
+  stats: async (params?: { organization_id?: string }) => {
     return apiClient.get('/staff/stats', params);
   },
 
@@ -1444,7 +1522,12 @@ export const staffApi = {
     });
   },
 
-  uploadDocument: async (id: string, file: File, documentType: string, description?: string | null) => {
+  uploadDocument: async (
+    id: string,
+    file: File,
+    documentType: string,
+    description?: string | null,
+  ) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('document_type', documentType);
@@ -1469,9 +1552,7 @@ export const staffApi = {
 };
 
 export const staffTypesApi = {
-  list: async (params?: {
-    organization_id?: string;
-  }) => {
+  list: async (params?: { organization_id?: string }) => {
     return apiClient.get('/staff-types', params);
   },
 
@@ -1490,13 +1571,16 @@ export const staffTypesApi = {
     return apiClient.post('/staff-types', data);
   },
 
-  update: async (id: string, data: {
-    name?: string;
-    code?: string;
-    description?: string | null;
-    is_active?: boolean;
-    display_order?: number;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      code?: string;
+      description?: string | null;
+      is_active?: boolean;
+      display_order?: number;
+    },
+  ) => {
     return apiClient.put(`/staff-types/${id}`, data);
   },
 
@@ -1510,7 +1594,12 @@ export const staffDocumentsApi = {
     return apiClient.get(`/staff/${staffId}/documents`);
   },
 
-  create: async (staffId: string, file: File, documentType: string, description?: string | null) => {
+  create: async (
+    staffId: string,
+    file: File,
+    documentType: string,
+    description?: string | null,
+  ) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('document_type', documentType);
@@ -1528,9 +1617,7 @@ export const staffDocumentsApi = {
 };
 
 export const classesApi = {
-  list: async (params?: {
-    organization_id?: string;
-  }) => {
+  list: async (params?: { organization_id?: string }) => {
     if (shouldUseLocal()) {
       return await desktopInvoke(DESKTOP_IPC_CHANNELS.classesList, { params });
     }
@@ -1556,14 +1643,17 @@ export const classesApi = {
     return apiClient.post('/classes', data);
   },
 
-  update: async (id: string, data: {
-    name?: string;
-    code?: string;
-    grade_level?: number | null;
-    description?: string | null;
-    default_capacity?: number;
-    is_active?: boolean;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      code?: string;
+      grade_level?: number | null;
+      description?: string | null;
+      default_capacity?: number;
+      is_active?: boolean;
+    },
+  ) => {
     return apiClient.put(`/classes/${id}`, data);
   },
 
@@ -1571,13 +1661,16 @@ export const classesApi = {
     return apiClient.delete(`/classes/${id}`);
   },
 
-  assignToYear: async (classId: string, data: {
-    academic_year_id: string;
-    section_name?: string | null;
-    room_id?: string | null;
-    capacity?: number | null;
-    notes?: string | null;
-  }) => {
+  assignToYear: async (
+    classId: string,
+    data: {
+      academic_year_id: string;
+      section_name?: string | null;
+      room_id?: string | null;
+      capacity?: number | null;
+      notes?: string | null;
+    },
+  ) => {
     return apiClient.post(`/classes/${classId}/assign-to-year`, data);
   },
 
@@ -1591,14 +1684,17 @@ export const classesApi = {
     return apiClient.post('/classes/bulk-assign-sections', data);
   },
 
-  updateInstance: async (id: string, data: {
-    section_name?: string | null;
-    room_id?: string | null;
-    capacity?: number | null;
-    teacher_id?: string | null;
-    is_active?: boolean;
-    notes?: string | null;
-  }) => {
+  updateInstance: async (
+    id: string,
+    data: {
+      section_name?: string | null;
+      room_id?: string | null;
+      capacity?: number | null;
+      teacher_id?: string | null;
+      is_active?: boolean;
+      notes?: string | null;
+    },
+  ) => {
     return apiClient.put(`/classes/academic-years/${id}`, data);
   },
 
@@ -1608,7 +1704,7 @@ export const classesApi = {
 
   getDeletionCheck: async (id: string) => {
     return apiClient.get<import('@/types/api/class').ClassAcademicYearDeletionCheck>(
-      `/classes/academic-years/${id}/deletion-check`
+      `/classes/academic-years/${id}/deletion-check`,
     );
   },
 
@@ -1642,10 +1738,7 @@ export const classAcademicYearsApi = {
 
 // Academic Years API
 export const academicYearsApi = {
-  list: async (params?: {
-    organization_id?: string;
-    is_current?: boolean;
-  }) => {
+  list: async (params?: { organization_id?: string; is_current?: boolean }) => {
     return apiClient.get('/academic-years', params);
   },
 
@@ -1665,15 +1758,18 @@ export const academicYearsApi = {
     return apiClient.post('/academic-years', data);
   },
 
-  update: async (id: string, data: {
-    name?: string;
-    start_date?: string;
-    end_date?: string;
-    is_current?: boolean;
-    description?: string | null;
-    status?: string;
-    organization_id?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      start_date?: string;
+      end_date?: string;
+      is_current?: boolean;
+      description?: string | null;
+      status?: string;
+      organization_id?: string | null;
+    },
+  ) => {
     return apiClient.put(`/academic-years/${id}`, data);
   },
 
@@ -1683,7 +1779,7 @@ export const academicYearsApi = {
 
   deletionCheck: async (id: string) => {
     return apiClient.get<import('@/types/api/academicYear').AcademicYearDeletionCheck>(
-      `/academic-years/${id}/deletion-check`
+      `/academic-years/${id}/deletion-check`,
     );
   },
 
@@ -1706,17 +1802,17 @@ export const buildingsApi = {
     return apiClient.get(`/buildings/${id}`);
   },
 
-  create: async (data: {
-    building_name: string;
-    school_id: string;
-  }) => {
+  create: async (data: { building_name: string; school_id: string }) => {
     return apiClient.post('/buildings', data);
   },
 
-  update: async (id: string, data: {
-    building_name?: string;
-    school_id?: string;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      building_name?: string;
+      school_id?: string;
+    },
+  ) => {
     return apiClient.put(`/buildings/${id}`, data);
   },
 
@@ -1749,12 +1845,15 @@ export const roomsApi = {
     return apiClient.post('/rooms', data);
   },
 
-  update: async (id: string, data: {
-    room_number?: string;
-    capacity?: number | null;
-    building_id?: string;
-    staff_id?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      room_number?: string;
+      capacity?: number | null;
+      building_id?: string;
+      staff_id?: string | null;
+    },
+  ) => {
     return apiClient.put(`/rooms/${id}`, data);
   },
 
@@ -1771,9 +1870,7 @@ export const hostelApi = {
 
 // Residency Types API
 export const residencyTypesApi = {
-  list: async (params?: {
-    organization_id?: string;
-  }) => {
+  list: async (params?: { organization_id?: string }) => {
     return apiClient.get('/residency-types', params);
   },
 
@@ -1791,13 +1888,16 @@ export const residencyTypesApi = {
     return apiClient.post('/residency-types', data);
   },
 
-  update: async (id: string, data: {
-    name?: string;
-    code?: string;
-    description?: string | null;
-    is_active?: boolean;
-    organization_id?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      code?: string;
+      description?: string | null;
+      is_active?: boolean;
+      organization_id?: string | null;
+    },
+  ) => {
     return apiClient.put(`/residency-types/${id}`, data);
   },
 
@@ -1808,28 +1908,25 @@ export const residencyTypesApi = {
 
 // Attendance Round Names API
 export const attendanceRoundNamesApi = {
-  list: async (params?: {
-    active_only?: string;
-  }) => {
+  list: async (params?: { active_only?: string }) => {
     if (shouldUseLocal()) {
       return await desktopInvoke(DESKTOP_IPC_CHANNELS.attendanceRoundNamesList, { params });
     }
     return apiClient.get('/attendance-round-names', params);
   },
 
-  create: async (data: {
-    name: string;
-    order_index: number;
-    is_active?: boolean;
-  }) => {
+  create: async (data: { name: string; order_index: number; is_active?: boolean }) => {
     return apiClient.post('/attendance-round-names', data);
   },
 
-  update: async (id: string, data: {
-    name?: string;
-    order_index?: number;
-    is_active?: boolean;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      order_index?: number;
+      is_active?: boolean;
+    },
+  ) => {
     return apiClient.put(`/attendance-round-names/${id}`, data);
   },
 
@@ -1904,7 +2001,7 @@ export const assetsApi = {
       assigned_on?: string | null;
       expected_return_date?: string | null;
       notes?: string | null;
-    }
+    },
   ) => {
     return apiClient.post(`/assets/${assetId}/assignments`, data);
   },
@@ -1931,7 +2028,7 @@ export const assetsApi = {
       cost?: number | null;
       vendor?: string | null;
       notes?: string | null;
-    }
+    },
   ) => {
     return apiClient.post(`/assets/${assetId}/maintenance`, data);
   },
@@ -1947,9 +2044,7 @@ export const assetsApi = {
 
 // Report Templates API
 export const reportTemplatesApi = {
-  list: async (params?: {
-    schoolId?: string;
-  }) => {
+  list: async (params?: { schoolId?: string }) => {
     const queryParams: Record<string, any> = {};
     if (params?.schoolId) {
       queryParams.school_id = params.schoolId;
@@ -1988,30 +2083,33 @@ export const reportTemplatesApi = {
     return apiClient.post('/report-templates', data);
   },
 
-  update: async (id: string, data: {
-    template_name?: string;
-    template_type?: string;
-    school_id?: string;
-    header_text?: string | null;
-    header_text_position?: string | null;
-    footer_text?: string | null;
-    footer_text_position?: string | null;
-    header_html?: string | null;
-    footer_html?: string | null;
-    report_logo_selection?: string | null;
-    show_primary_logo?: boolean;
-    show_secondary_logo?: boolean;
-    show_ministry_logo?: boolean;
-    primary_logo_position?: string | null;
-    secondary_logo_position?: string | null;
-    ministry_logo_position?: string | null;
-    show_page_numbers?: boolean;
-    show_generation_date?: boolean;
-    table_alternating_colors?: boolean;
-    report_font_size?: string | null;
-    is_default?: boolean;
-    is_active?: boolean;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      template_name?: string;
+      template_type?: string;
+      school_id?: string;
+      header_text?: string | null;
+      header_text_position?: string | null;
+      footer_text?: string | null;
+      footer_text_position?: string | null;
+      header_html?: string | null;
+      footer_html?: string | null;
+      report_logo_selection?: string | null;
+      show_primary_logo?: boolean;
+      show_secondary_logo?: boolean;
+      show_ministry_logo?: boolean;
+      primary_logo_position?: string | null;
+      secondary_logo_position?: string | null;
+      ministry_logo_position?: string | null;
+      show_page_numbers?: boolean;
+      show_generation_date?: boolean;
+      table_alternating_colors?: boolean;
+      report_font_size?: string | null;
+      is_default?: boolean;
+      is_active?: boolean;
+    },
+  ) => {
     return apiClient.put(`/report-templates/${id}`, data);
   },
 
@@ -2121,48 +2219,51 @@ export const studentsApi = {
     return apiClient.post('/students', data);
   },
 
-  update: async (id: string, data: {
-    admission_no?: string;
-    full_name?: string;
-    father_name?: string;
-    gender?: string;
-    school_id?: string | null;
-    card_number?: string | null;
-    grandfather_name?: string | null;
-    mother_name?: string | null;
-    birth_year?: string | null;
-    birth_date?: string | null;
-    age?: number | null;
-    admission_year?: string | null;
-    orig_province?: string | null;
-    orig_district?: string | null;
-    orig_village?: string | null;
-    curr_province?: string | null;
-    curr_district?: string | null;
-    curr_village?: string | null;
-    nationality?: string | null;
-    preferred_language?: string | null;
-    previous_school?: string | null;
-    guardian_name?: string | null;
-    guardian_relation?: string | null;
-    guardian_phone?: string | null;
-    guardian_tazkira?: string | null;
-    guardian_picture_path?: string | null;
-    home_address?: string | null;
-    zamin_name?: string | null;
-    zamin_phone?: string | null;
-    zamin_tazkira?: string | null;
-    zamin_address?: string | null;
-    applying_grade?: string | null;
-    is_orphan?: boolean;
-    admission_fee_status?: string;
-    student_status?: string;
-    disability_status?: string | null;
-    emergency_contact_name?: string | null;
-    emergency_contact_phone?: string | null;
-    family_income?: string | null;
-    picture_path?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      admission_no?: string;
+      full_name?: string;
+      father_name?: string;
+      gender?: string;
+      school_id?: string | null;
+      card_number?: string | null;
+      grandfather_name?: string | null;
+      mother_name?: string | null;
+      birth_year?: string | null;
+      birth_date?: string | null;
+      age?: number | null;
+      admission_year?: string | null;
+      orig_province?: string | null;
+      orig_district?: string | null;
+      orig_village?: string | null;
+      curr_province?: string | null;
+      curr_district?: string | null;
+      curr_village?: string | null;
+      nationality?: string | null;
+      preferred_language?: string | null;
+      previous_school?: string | null;
+      guardian_name?: string | null;
+      guardian_relation?: string | null;
+      guardian_phone?: string | null;
+      guardian_tazkira?: string | null;
+      guardian_picture_path?: string | null;
+      home_address?: string | null;
+      zamin_name?: string | null;
+      zamin_phone?: string | null;
+      zamin_tazkira?: string | null;
+      zamin_address?: string | null;
+      applying_grade?: string | null;
+      is_orphan?: boolean;
+      admission_fee_status?: string;
+      student_status?: string;
+      disability_status?: string | null;
+      emergency_contact_name?: string | null;
+      emergency_contact_phone?: string | null;
+      family_income?: string | null;
+      picture_path?: string | null;
+    },
+  ) => {
     return apiClient.put(`/students/${id}`, data);
   },
 
@@ -2170,9 +2271,7 @@ export const studentsApi = {
     return apiClient.delete(`/students/${id}`);
   },
 
-  stats: async (params?: {
-    organization_id?: string;
-  }) => {
+  stats: async (params?: { organization_id?: string }) => {
     return apiClient.get('/students/stats', params);
   },
 
@@ -2301,7 +2400,12 @@ export const studentDocumentsApi = {
     return apiClient.get(`/students/${studentId}/documents`);
   },
 
-  create: async (studentId: string, file: File, documentType: string, description?: string | null) => {
+  create: async (
+    studentId: string,
+    file: File,
+    documentType: string,
+    description?: string | null,
+  ) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('document_type', documentType);
@@ -2324,29 +2428,35 @@ export const studentEducationalHistoryApi = {
     return apiClient.get(`/students/${studentId}/educational-history`);
   },
 
-  create: async (studentId: string, data: {
-    institution_name: string;
-    school_id?: string | null;
-    academic_year?: string | null;
-    grade_level?: string | null;
-    start_date?: string | null;
-    end_date?: string | null;
-    achievements?: string | null;
-    notes?: string | null;
-  }) => {
+  create: async (
+    studentId: string,
+    data: {
+      institution_name: string;
+      school_id?: string | null;
+      academic_year?: string | null;
+      grade_level?: string | null;
+      start_date?: string | null;
+      end_date?: string | null;
+      achievements?: string | null;
+      notes?: string | null;
+    },
+  ) => {
     return apiClient.post(`/students/${studentId}/educational-history`, data);
   },
 
-  update: async (id: string, data: {
-    institution_name?: string;
-    school_id?: string | null;
-    academic_year?: string | null;
-    grade_level?: string | null;
-    start_date?: string | null;
-    end_date?: string | null;
-    achievements?: string | null;
-    notes?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      institution_name?: string;
+      school_id?: string | null;
+      academic_year?: string | null;
+      grade_level?: string | null;
+      start_date?: string | null;
+      end_date?: string | null;
+      achievements?: string | null;
+      notes?: string | null;
+    },
+  ) => {
     return apiClient.put(`/student-educational-history/${id}`, data);
   },
 
@@ -2361,29 +2471,35 @@ export const studentDisciplineRecordsApi = {
     return apiClient.get(`/students/${studentId}/discipline-records`);
   },
 
-  create: async (studentId: string, data: {
-    incident_date: string;
-    incident_type: string;
-    school_id?: string | null;
-    description?: string | null;
-    severity?: string;
-    action_taken?: string | null;
-    resolved?: boolean;
-    resolved_date?: string | null;
-  }) => {
+  create: async (
+    studentId: string,
+    data: {
+      incident_date: string;
+      incident_type: string;
+      school_id?: string | null;
+      description?: string | null;
+      severity?: string;
+      action_taken?: string | null;
+      resolved?: boolean;
+      resolved_date?: string | null;
+    },
+  ) => {
     return apiClient.post(`/students/${studentId}/discipline-records`, data);
   },
 
-  update: async (id: string, data: {
-    incident_date?: string;
-    incident_type?: string;
-    school_id?: string | null;
-    description?: string | null;
-    severity?: string;
-    action_taken?: string | null;
-    resolved?: boolean;
-    resolved_date?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      incident_date?: string;
+      incident_type?: string;
+      school_id?: string | null;
+      description?: string | null;
+      severity?: string;
+      action_taken?: string | null;
+      resolved?: boolean;
+      resolved_date?: string | null;
+    },
+  ) => {
     return apiClient.put(`/student-discipline-records/${id}`, data);
   },
 
@@ -2441,23 +2557,26 @@ export const studentAdmissionsApi = {
     return apiClient.post('/student-admissions', data);
   },
 
-  update: async (id: string, data: {
-    student_id?: string;
-    school_id?: string | null;
-    academic_year_id?: string | null;
-    class_id?: string | null;
-    class_academic_year_id?: string | null;
-    residency_type_id?: string | null;
-    room_id?: string | null;
-    admission_year?: string | null;
-    admission_date?: string;
-    enrollment_status?: string;
-    enrollment_type?: string | null;
-    shift?: string | null;
-    is_boarder?: boolean;
-    fee_status?: string | null;
-    placement_notes?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      student_id?: string;
+      school_id?: string | null;
+      academic_year_id?: string | null;
+      class_id?: string | null;
+      class_academic_year_id?: string | null;
+      residency_type_id?: string | null;
+      room_id?: string | null;
+      admission_year?: string | null;
+      admission_date?: string;
+      enrollment_status?: string;
+      enrollment_type?: string | null;
+      shift?: string | null;
+      is_boarder?: boolean;
+      fee_status?: string | null;
+      placement_notes?: string | null;
+    },
+  ) => {
     return apiClient.put(`/student-admissions/${id}`, data);
   },
 
@@ -2465,9 +2584,7 @@ export const studentAdmissionsApi = {
     return apiClient.delete(`/student-admissions/${id}`);
   },
 
-  stats: async (params?: {
-    organization_id?: string;
-  }) => {
+  stats: async (params?: { organization_id?: string }) => {
     return apiClient.get('/student-admissions/stats', params);
   },
 
@@ -2506,15 +2623,14 @@ export const studentAdmissionsApi = {
     return apiClient.post('/student-admissions/export', params);
   },
 
-  bulkDeactivate: async (data: {
-    admission_ids: string[];
-  }) => {
+  bulkDeactivate: async (data: { admission_ids: string[] }) => {
     return apiClient.post('/student-admissions/bulk-deactivate', data);
   },
 
   bulkStatus: async (data: {
     admission_ids: string[];
-    enrollment_status: 'pending' | 'admitted' | 'active' | 'inactive' | 'suspended' | 'withdrawn' | 'graduated';
+    enrollment_status:
+      'pending' | 'admitted' | 'active' | 'inactive' | 'suspended' | 'withdrawn' | 'graduated';
   }) => {
     return apiClient.post('/student-admissions/bulk-status', data);
   },
@@ -2526,7 +2642,8 @@ export const studentAdmissionsApi = {
     is_boarder: boolean;
     residency_type_id?: string | null;
     room_id?: string | null;
-    enrollment_status?: 'pending' | 'admitted' | 'active' | 'inactive' | 'suspended' | 'withdrawn' | 'graduated';
+    enrollment_status?:
+      'pending' | 'admitted' | 'active' | 'inactive' | 'suspended' | 'withdrawn' | 'graduated';
     shift?: string | null;
     placement_notes?: string | null;
     only_without_class?: boolean;
@@ -2535,7 +2652,12 @@ export const studentAdmissionsApi = {
       message: string;
       updated_count: number;
       skipped_count: number;
-      errors: Array<{ student_id?: string; admission_id?: string; reason: string; message?: string }>;
+      errors: Array<{
+        student_id?: string;
+        admission_id?: string;
+        reason: string;
+        message?: string;
+      }>;
       total_candidates: number;
     }>('/student-admissions/bulk-assign-placement', data);
   },
@@ -2579,11 +2701,14 @@ export const teacherSubjectAssignmentsApi = {
     return apiClient.post('/teacher-subject-assignments', data);
   },
 
-  update: async (id: string, data: {
-    schedule_slot_ids?: string[];
-    is_active?: boolean;
-    notes?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      schedule_slot_ids?: string[];
+      is_active?: boolean;
+      notes?: string | null;
+    },
+  ) => {
     return apiClient.put(`/teacher-subject-assignments/${id}`, data);
   },
 
@@ -2594,10 +2719,7 @@ export const teacherSubjectAssignmentsApi = {
 
 // Schedule Slots API
 export const scheduleSlotsApi = {
-  list: async (params?: {
-    organization_id?: string;
-    academic_year_id?: string;
-  }) => {
+  list: async (params?: { organization_id?: string; academic_year_id?: string }) => {
     return apiClient.get('/schedule-slots', params);
   },
 
@@ -2610,7 +2732,9 @@ export const scheduleSlotsApi = {
     code: string;
     start_time: string;
     end_time: string;
-    days_of_week?: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday')[];
+    days_of_week?: (
+      'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
+    )[];
     default_duration_minutes?: number;
     academic_year_id?: string | null;
     school_id?: string | null;
@@ -2622,20 +2746,25 @@ export const scheduleSlotsApi = {
     return apiClient.post('/schedule-slots', data);
   },
 
-  update: async (id: string, data: {
-    name?: string;
-    code?: string;
-    start_time?: string;
-    end_time?: string;
-    days_of_week?: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday')[];
-    default_duration_minutes?: number;
-    academic_year_id?: string | null;
-    school_id?: string | null;
-    sort_order?: number;
-    is_active?: boolean;
-    description?: string | null;
-    organization_id?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      code?: string;
+      start_time?: string;
+      end_time?: string;
+      days_of_week?: (
+        'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
+      )[];
+      default_duration_minutes?: number;
+      academic_year_id?: string | null;
+      school_id?: string | null;
+      sort_order?: number;
+      is_active?: boolean;
+      description?: string | null;
+      organization_id?: string | null;
+    },
+  ) => {
     return apiClient.put(`/schedule-slots/${id}`, data);
   },
 
@@ -2646,10 +2775,7 @@ export const scheduleSlotsApi = {
 
 // Timetables API
 export const timetablesApi = {
-  list: async (params?: {
-    organization_id?: string;
-    academic_year_id?: string;
-  }) => {
+  list: async (params?: { organization_id?: string; academic_year_id?: string }) => {
     return apiClient.get('/timetables', params);
   },
 
@@ -2670,22 +2796,33 @@ export const timetablesApi = {
       subject_id: string;
       teacher_id: string;
       schedule_slot_id: string;
-      day_name: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday' | 'all_year';
+      day_name:
+        | 'monday'
+        | 'tuesday'
+        | 'wednesday'
+        | 'thursday'
+        | 'friday'
+        | 'saturday'
+        | 'sunday'
+        | 'all_year';
       period_order: number;
     }>;
   }) => {
     return apiClient.post('/timetables', data);
   },
 
-  update: async (id: string, data: {
-    name?: string;
-    timetable_type?: string;
-    description?: string | null;
-    academic_year_id?: string | null;
-    school_id?: string | null;
-    is_active?: boolean;
-    organization_id?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      timetable_type?: string;
+      description?: string | null;
+      academic_year_id?: string | null;
+      school_id?: string | null;
+      is_active?: boolean;
+      organization_id?: string | null;
+    },
+  ) => {
     return apiClient.put(`/timetables/${id}`, data);
   },
 
@@ -2723,11 +2860,14 @@ export const teacherTimetablePreferencesApi = {
     return apiClient.post('/teacher-timetable-preferences', data);
   },
 
-  update: async (id: string, data: {
-    schedule_slot_ids?: string[];
-    is_active?: boolean;
-    notes?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      schedule_slot_ids?: string[];
+      is_active?: boolean;
+      notes?: string | null;
+    },
+  ) => {
     return apiClient.put(`/teacher-timetable-preferences/${id}`, data);
   },
 
@@ -2774,13 +2914,16 @@ export const subjectsApi = {
     return apiClient.post('/subjects', data);
   },
 
-  update: async (id: string, data: {
-    name?: string;
-    code?: string;
-    description?: string | null;
-    is_active?: boolean;
-    organization_id?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      code?: string;
+      description?: string | null;
+      is_active?: boolean;
+      organization_id?: string | null;
+    },
+  ) => {
     return apiClient.put(`/subjects/${id}`, data);
   },
 
@@ -2791,10 +2934,7 @@ export const subjectsApi = {
 
 // Class Subject Templates API
 export const classSubjectTemplatesApi = {
-  list: async (params?: {
-    class_id?: string;
-    organization_id?: string;
-  }) => {
+  list: async (params?: { class_id?: string; organization_id?: string }) => {
     return apiClient.get('/class-subject-templates', params);
   },
 
@@ -2813,11 +2953,14 @@ export const classSubjectTemplatesApi = {
     return apiClient.post('/class-subject-templates', data);
   },
 
-  update: async (id: string, data: {
-    is_required?: boolean;
-    credits?: number | null;
-    hours_per_week?: number | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      is_required?: boolean;
+      credits?: number | null;
+      hours_per_week?: number | null;
+    },
+  ) => {
     return apiClient.put(`/class-subject-templates/${id}`, data);
   },
 
@@ -2855,14 +2998,17 @@ export const classSubjectsApi = {
     return apiClient.post('/class-subjects', data);
   },
 
-  update: async (id: string, data: {
-    teacher_id?: string | null;
-    room_id?: string | null;
-    credits?: number | null;
-    hours_per_week?: number | null;
-    is_required?: boolean;
-    notes?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      teacher_id?: string | null;
+      room_id?: string | null;
+      credits?: number | null;
+      hours_per_week?: number | null;
+      is_required?: boolean;
+      notes?: string | null;
+    },
+  ) => {
     return apiClient.put(`/class-subjects/${id}`, data);
   },
 
@@ -2938,7 +3084,12 @@ export const attendanceSessionsApi = {
     return apiClient.get(`/attendance-sessions/${id}/scans`, params);
   },
 
-  roster: async (params: { class_id?: string; class_ids?: string[]; academic_year_id?: string; is_boarder?: boolean }) => {
+  roster: async (params: {
+    class_id?: string;
+    class_ids?: string[];
+    academic_year_id?: string;
+    is_boarder?: boolean;
+  }) => {
     if (shouldUseLocal()) {
       return await desktopInvoke(DESKTOP_IPC_CHANNELS.attendanceSessionsRoster, { params });
     }
@@ -3026,13 +3177,16 @@ export const libraryCategoriesApi = {
     return apiClient.post('/library-categories', data);
   },
 
-  update: async (id: string, data: {
-    name?: string;
-    code?: string | null;
-    description?: string | null;
-    is_active?: boolean;
-    display_order?: number;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      code?: string | null;
+      description?: string | null;
+      is_active?: boolean;
+      display_order?: number;
+    },
+  ) => {
     return apiClient.put(`/library-categories/${id}`, data);
   },
 
@@ -3062,13 +3216,16 @@ export const assetCategoriesApi = {
     return apiClient.post('/asset-categories', data);
   },
 
-  update: async (id: string, data: {
-    name?: string;
-    code?: string | null;
-    description?: string | null;
-    is_active?: boolean;
-    display_order?: number;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      code?: string | null;
+      description?: string | null;
+      is_active?: boolean;
+      display_order?: number;
+    },
+  ) => {
     return apiClient.put(`/asset-categories/${id}`, data);
   },
 
@@ -3079,7 +3236,12 @@ export const assetCategoriesApi = {
 
 // Library Books API
 export const libraryBooksApi = {
-  list: async (params?: { search?: string; page?: number; per_page?: number; organization_id?: string }) => {
+  list: async (params?: {
+    search?: string;
+    page?: number;
+    per_page?: number;
+    organization_id?: string;
+  }) => {
     return apiClient.get('/library-books', params);
   },
 
@@ -3107,18 +3269,21 @@ export const libraryBooksApi = {
     return apiClient.post('/library-books', data);
   },
 
-  update: async (id: string, data: {
-    title?: string;
-    author?: string | null;
-    isbn?: string | null;
-    book_number?: string | null;
-    category?: string | null;
-    category_id?: string | null;
-    volume?: string | null;
-    description?: string | null;
-    price?: number;
-    default_loan_days?: number;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      title?: string;
+      author?: string | null;
+      isbn?: string | null;
+      book_number?: string | null;
+      category?: string | null;
+      category_id?: string | null;
+      volume?: string | null;
+      description?: string | null;
+      price?: number;
+      default_loan_days?: number;
+    },
+  ) => {
     return apiClient.put(`/library-books/${id}`, data);
   },
 
@@ -3138,11 +3303,14 @@ export const libraryCopiesApi = {
     return apiClient.post('/library-copies', data);
   },
 
-  update: async (id: string, data: {
-    copy_code?: string | null;
-    status?: string;
-    acquired_at?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      copy_code?: string | null;
+      status?: string;
+      acquired_at?: string | null;
+    },
+  ) => {
     return apiClient.put(`/library-copies/${id}`, data);
   },
 
@@ -3171,14 +3339,17 @@ export const libraryLoansApi = {
     return apiClient.post('/library-loans', data);
   },
 
-  update: async (id: string, data: {
-    student_id?: string | null;
-    staff_id?: string | null;
-    loan_date: string;
-    due_date?: string | null;
-    deposit_amount?: number;
-    notes?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      student_id?: string | null;
+      staff_id?: string | null;
+      loan_date: string;
+      due_date?: string | null;
+      deposit_amount?: number;
+      notes?: string | null;
+    },
+  ) => {
     return apiClient.put(`/library-loans/${id}`, data);
   },
 
@@ -3186,12 +3357,15 @@ export const libraryLoansApi = {
     return apiClient.delete(`/library-loans/${id}`);
   },
 
-  returnCopy: async (id: string, data?: {
-    returned_at?: string | null;
-    fee_retained?: number;
-    refunded?: boolean;
-    notes?: string | null;
-  }) => {
+  returnCopy: async (
+    id: string,
+    data?: {
+      returned_at?: string | null;
+      fee_retained?: number;
+      refunded?: boolean;
+      notes?: string | null;
+    },
+  ) => {
     return apiClient.post(`/library-loans/${id}/return`, data || {});
   },
 
@@ -3233,7 +3407,7 @@ export const leaveRequestsApi = {
       calendar_preference?: 'gregorian' | 'jalali' | 'qamari';
       language?: 'en' | 'ps' | 'fa' | 'ar';
       labels?: Record<string, string>;
-    }
+    },
   ) =>
     apiClient.requestFile(`/leave-requests/${id}/print`, {
       method: 'POST',
@@ -3260,8 +3434,12 @@ export const leaveRequestsApi = {
 };
 // Short-term courses API
 export const shortTermCoursesApi = {
-  list: async (params?: { organization_id?: string; status?: string; page?: number; per_page?: number }) =>
-    apiClient.get('/short-term-courses', params),
+  list: async (params?: {
+    organization_id?: string;
+    status?: string;
+    page?: number;
+    per_page?: number;
+  }) => apiClient.get('/short-term-courses', params),
   get: async (id: string) => apiClient.get(`/short-term-courses/${id}`),
   create: async (data: any) => apiClient.post('/short-term-courses', data),
   update: async (id: string, data: any) => apiClient.put(`/short-term-courses/${id}`, data),
@@ -3273,34 +3451,50 @@ export const shortTermCoursesApi = {
 
 // Course students API
 export const courseStudentsApi = {
-  list: async (params?: { organization_id?: string; course_id?: string; status?: string; page?: number; per_page?: number }) =>
-    apiClient.get('/course-students', params),
+  list: async (params?: {
+    organization_id?: string;
+    course_id?: string;
+    status?: string;
+    page?: number;
+    per_page?: number;
+  }) => apiClient.get('/course-students', params),
   get: async (id: string) => apiClient.get(`/course-students/${id}`),
   create: async (data: any) => apiClient.post('/course-students', data),
   update: async (id: string, data: any) => apiClient.put(`/course-students/${id}`, data),
   delete: async (id: string) => apiClient.delete(`/course-students/${id}`),
   enrollFromMain: async (data: any) => apiClient.post('/course-students/enroll-from-main', data),
-  copyToMain: async (id: string, data: any) => apiClient.post(`/course-students/${id}/copy-to-main`, data),
+  copyToMain: async (id: string, data: any) =>
+    apiClient.post(`/course-students/${id}/copy-to-main`, data),
   markCompleted: async (id: string) => apiClient.post(`/course-students/${id}/complete`),
   markDropped: async (id: string) => apiClient.post(`/course-students/${id}/drop`),
-  issueCertificate: async (id: string) => apiClient.post(`/course-students/${id}/issue-certificate`),
-  enrollToNewCourse: async (id: string, data: { course_id: string; registration_date?: string; fee_paid?: boolean; fee_amount?: number }) =>
-    apiClient.post(`/course-students/${id}/enroll-to-new-course`, data),
+  issueCertificate: async (id: string) =>
+    apiClient.post(`/course-students/${id}/issue-certificate`),
+  enrollToNewCourse: async (
+    id: string,
+    data: {
+      course_id: string;
+      registration_date?: string;
+      fee_paid?: boolean;
+      fee_amount?: number;
+    },
+  ) => apiClient.post(`/course-students/${id}/enroll-to-new-course`, data),
 };
 
 // Course student discipline records API
 export const courseStudentDisciplineRecordsApi = {
-  list: async (courseStudentId: string) => apiClient.get(`/course-students/${courseStudentId}/discipline-records`),
-  create: async (courseStudentId: string, data: any) => apiClient.post(`/course-students/${courseStudentId}/discipline-records`, data),
-  update: async (id: string, data: any) => apiClient.put(`/course-student-discipline-records/${id}`, data),
+  list: async (courseStudentId: string) =>
+    apiClient.get(`/course-students/${courseStudentId}/discipline-records`),
+  create: async (courseStudentId: string, data: any) =>
+    apiClient.post(`/course-students/${courseStudentId}/discipline-records`, data),
+  update: async (id: string, data: any) =>
+    apiClient.put(`/course-student-discipline-records/${id}`, data),
   delete: async (id: string) => apiClient.delete(`/course-student-discipline-records/${id}`),
   resolve: async (id: string) => apiClient.post(`/course-student-discipline-records/${id}/resolve`),
 };
 
 // Course Attendance Groups API
 export const courseAttendanceGroupsApi = {
-  list: async (params: { course_id: string }) =>
-    apiClient.get('/course-attendance-groups', params),
+  list: async (params: { course_id: string }) => apiClient.get('/course-attendance-groups', params),
 
   create: async (data: {
     course_id: string;
@@ -3309,12 +3503,15 @@ export const courseAttendanceGroupsApi = {
     student_ids: string[];
   }) => apiClient.post('/course-attendance-groups', data),
 
-  update: async (id: string, data: {
-    name?: string;
-    description?: string | null;
-    is_active?: boolean;
-    student_ids?: string[];
-  }) => apiClient.put(`/course-attendance-groups/${id}`, data),
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      description?: string | null;
+      is_active?: boolean;
+      student_ids?: string[];
+    },
+  ) => apiClient.put(`/course-attendance-groups/${id}`, data),
 
   delete: async (id: string) => apiClient.delete(`/course-attendance-groups/${id}`),
 };
@@ -3342,25 +3539,31 @@ export const courseAttendanceSessionsApi = {
     remarks?: string | null;
   }) => apiClient.post('/course-attendance-sessions', data),
 
-  update: async (id: string, data: {
-    session_date?: string;
-    session_title?: string | null;
-    method?: string;
-    remarks?: string | null;
-  }) => apiClient.put(`/course-attendance-sessions/${id}`, data),
+  update: async (
+    id: string,
+    data: {
+      session_date?: string;
+      session_title?: string | null;
+      method?: string;
+      remarks?: string | null;
+    },
+  ) => apiClient.put(`/course-attendance-sessions/${id}`, data),
 
   delete: async (id: string) => apiClient.delete(`/course-attendance-sessions/${id}`),
 
   roster: async (params: { course_id: string }) =>
     apiClient.get('/course-attendance-sessions/roster', params),
 
-  markRecords: async (id: string, data: {
-    records: Array<{
-      course_student_id: string;
-      status: 'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave';
-      note?: string | null;
-    }>;
-  }) => apiClient.post(`/course-attendance-sessions/${id}/records`, data),
+  markRecords: async (
+    id: string,
+    data: {
+      records: Array<{
+        course_student_id: string;
+        status: 'present' | 'absent' | 'late' | 'excused' | 'sick' | 'leave';
+        note?: string | null;
+      }>;
+    },
+  ) => apiClient.post(`/course-attendance-sessions/${id}/records`, data),
 
   scan: async (id: string, data: { code: string }) =>
     apiClient.post(`/course-attendance-sessions/${id}/scan`, data),
@@ -3486,12 +3689,13 @@ export const idCardTemplatesApi = {
 
 // Translations API
 export const translationsApi = {
-  get: async () => apiClient.get<{
-    en: Record<string, unknown>;
-    ps: Record<string, unknown>;
-    fa: Record<string, unknown>;
-    ar: Record<string, unknown>;
-  }>('/translations'),
+  get: async () =>
+    apiClient.get<{
+      en: Record<string, unknown>;
+      ps: Record<string, unknown>;
+      fa: Record<string, unknown>;
+      ar: Record<string, unknown>;
+    }>('/translations'),
 
   save: async (translations: {
     en: Record<string, unknown>;
@@ -3505,12 +3709,15 @@ export const translationsApi = {
       message: string;
       updated_files: string[];
       updated_keys_count: number;
-      file_changes: Record<string, {
-        file_name: string;
-        language: string;
-        keys_changed: number;
-        changed_keys: string[];
-      }>;
+      file_changes: Record<
+        string,
+        {
+          file_name: string;
+          language: string;
+          keys_changed: number;
+          changed_keys: string[];
+        }
+      >;
     }>('/translations/changes', { changes }),
 
   getChangedFiles: async () =>
@@ -3560,10 +3767,8 @@ export const translationsApi = {
 };
 // Exam Types API
 export const examTypesApi = {
-  list: async (params?: {
-    organization_id?: string;
-    is_active?: boolean;
-  }) => apiClient.get('/exam-types', params),
+  list: async (params?: { organization_id?: string; is_active?: boolean }) =>
+    apiClient.get('/exam-types', params),
   get: async (id: string) => apiClient.get(`/exam-types/${id}`),
   create: async (data: {
     name: string;
@@ -3572,13 +3777,16 @@ export const examTypesApi = {
     display_order?: number;
     is_active?: boolean;
   }) => apiClient.post('/exam-types', data),
-  update: async (id: string, data: {
-    name?: string;
-    code?: string | null;
-    description?: string | null;
-    display_order?: number;
-    is_active?: boolean;
-  }) => apiClient.put(`/exam-types/${id}`, data),
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      code?: string | null;
+      description?: string | null;
+      display_order?: number;
+      is_active?: boolean;
+    },
+  ) => apiClient.put(`/exam-types/${id}`, data),
   delete: async (id: string) => apiClient.delete(`/exam-types/${id}`),
 };
 
@@ -3608,15 +3816,18 @@ export const examsApi = {
     return apiClient.post('/exams', data);
   },
 
-  update: async (id: string, data: {
-    name?: string;
-    academic_year_id?: string;
-    exam_type_id?: string | null;
-    description?: string | null;
-    start_date?: string | null;
-    end_date?: string | null;
-    status?: string;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      academic_year_id?: string;
+      exam_type_id?: string | null;
+      description?: string | null;
+      start_date?: string | null;
+      end_date?: string | null;
+      status?: string;
+    },
+  ) => {
     return apiClient.put(`/exams/${id}`, data);
   },
 
@@ -3640,8 +3851,11 @@ export const examsApi = {
     return apiClient.get(`/exams/${examId}/reports/classes/${classId}`);
   },
 
-  studentReport: async (examId: string, studentId: string) => {
-    return apiClient.get(`/exams/${examId}/reports/students/${studentId}`);
+  studentReport: async (examId: string, studentId: string, language?: string) => {
+    return apiClient.get(
+      `/exams/${examId}/reports/students/${studentId}`,
+      language ? { language } : undefined,
+    );
   },
 
   exportStudentReportCardsPdf: async (
@@ -3651,11 +3865,11 @@ export const examsApi = {
       language?: string;
       calendar_preference?: string;
       branding_id?: string;
-    }
+    },
   ) => {
     return apiClient.post<{ id: string; status: string; message?: string }>(
       `/exams/${examId}/reports/students/export/pdf`,
-      data
+      data,
     );
   },
 
@@ -3666,11 +3880,11 @@ export const examsApi = {
       exam_student_ids: string[];
       language?: string;
       calendar_preference?: string;
-    }
+    },
   ) => {
     return apiClient.get<{ cards: unknown[] }>(
       `/exams/${examId}/reports/students/combined`,
-      params
+      params,
     );
   },
 
@@ -3682,11 +3896,11 @@ export const examsApi = {
       language?: string;
       calendar_preference?: string;
       branding_id?: string;
-    }
+    },
   ) => {
     return apiClient.post<{ id: string; status: string; message?: string }>(
       `/exams/${examId}/reports/students/combined/export/pdf`,
-      data
+      data,
     );
   },
 
@@ -3711,24 +3925,34 @@ export const examsApi = {
     return apiClient.get(`/exams/${examId}/roll-numbers/start-from`);
   },
 
-  previewRollNumberAssignment: async (examId: string, data: {
-    exam_class_id?: string;
-    start_from: string;
-    scope: 'exam' | 'class';
-    override_existing?: boolean;
-  }) => {
+  previewRollNumberAssignment: async (
+    examId: string,
+    data: {
+      exam_class_id?: string;
+      start_from: string;
+      scope: 'exam' | 'class';
+      override_existing?: boolean;
+    },
+  ) => {
     return apiClient.post(`/exams/${examId}/roll-numbers/preview-auto-assign`, data);
   },
 
-  confirmRollNumberAssignment: async (examId: string, data: {
-    items: Array<{ exam_student_id: string; new_roll_number: string }>;
-  }) => {
+  confirmRollNumberAssignment: async (
+    examId: string,
+    data: {
+      items: Array<{ exam_student_id: string; new_roll_number: string }>;
+    },
+  ) => {
     return apiClient.post(`/exams/${examId}/roll-numbers/confirm-auto-assign`, data);
   },
 
-  updateRollNumber: async (examId: string, examStudentId: string, data: {
-    exam_roll_number: string | null;
-  }) => {
+  updateRollNumber: async (
+    examId: string,
+    examStudentId: string,
+    data: {
+      exam_roll_number: string | null;
+    },
+  ) => {
     return apiClient.patch(`/exams/${examId}/students/${examStudentId}/roll-number`, data);
   },
 
@@ -3736,24 +3960,34 @@ export const examsApi = {
     return apiClient.get(`/exams/${examId}/secret-numbers/start-from`);
   },
 
-  previewSecretNumberAssignment: async (examId: string, data: {
-    exam_class_id?: string;
-    start_from: string;
-    scope: 'exam' | 'class';
-    override_existing?: boolean;
-  }) => {
+  previewSecretNumberAssignment: async (
+    examId: string,
+    data: {
+      exam_class_id?: string;
+      start_from: string;
+      scope: 'exam' | 'class';
+      override_existing?: boolean;
+    },
+  ) => {
     return apiClient.post(`/exams/${examId}/secret-numbers/preview-auto-assign`, data);
   },
 
-  confirmSecretNumberAssignment: async (examId: string, data: {
-    items: Array<{ exam_student_id: string; new_secret_number: string }>;
-  }) => {
+  confirmSecretNumberAssignment: async (
+    examId: string,
+    data: {
+      items: Array<{ exam_student_id: string; new_secret_number: string }>;
+    },
+  ) => {
     return apiClient.post(`/exams/${examId}/secret-numbers/confirm-auto-assign`, data);
   },
 
-  updateSecretNumber: async (examId: string, examStudentId: string, data: {
-    exam_secret_number: string | null;
-  }) => {
+  updateSecretNumber: async (
+    examId: string,
+    examStudentId: string,
+    data: {
+      exam_secret_number: string | null;
+    },
+  ) => {
     return apiClient.patch(`/exams/${examId}/students/${examStudentId}/secret-number`, data);
   },
 
@@ -3778,14 +4012,14 @@ export const examsApi = {
 
   secretLabelsHtml: async (
     examId: string,
-    params?: { exam_class_id?: string; subject_id?: string; preview?: boolean; layout?: string }
+    params?: { exam_class_id?: string; subject_id?: string; preview?: boolean; layout?: string },
   ) => {
     return apiClient.get(`/exams/${examId}/reports/secret-labels`, params);
   },
 
   secretLabelsPdf: async (
     examId: string,
-    params?: { exam_class_id?: string; subject_id?: string; layout?: string }
+    params?: { exam_class_id?: string; subject_id?: string; layout?: string },
   ) => {
     return apiClient.requestFile(`/exams/${examId}/reports/secret-labels`, {
       method: 'GET',
@@ -3800,7 +4034,7 @@ export const examsApi = {
     params?: {
       page?: number;
       per_page?: number;
-    }
+    },
   ) => {
     return apiClient.get(`/exams/${examId}/reports/classes/${classId}/consolidated`, params);
   },
@@ -3816,9 +4050,12 @@ export const examsApi = {
       show_rank?: boolean;
       page?: number;
       per_page?: number;
-    }
+    },
   ) => {
-    return apiClient.get(`/exams/${examId}/reports/classes/${classId}/subjects/${subjectId}`, params);
+    return apiClient.get(
+      `/exams/${examId}/reports/classes/${classId}/subjects/${subjectId}`,
+      params,
+    );
   },
 };
 
@@ -3855,10 +4092,7 @@ export const examAbsencePenaltyApi = {
     return apiClient.put('/exam-absence-penalty/settings', data);
   },
 
-  listAbsences: async (params: {
-    exam_id: string;
-    exam_class_id?: string;
-  }) => {
+  listAbsences: async (params: { exam_id: string; exam_class_id?: string }) => {
     return apiClient.get<{
       exam_id: string;
       exam_class_id: string | null;
@@ -3881,10 +4115,7 @@ export const examAbsencePenaltyApi = {
     return apiClient.put('/exam-absence-penalty/absences', data);
   },
 
-  downloadAbsencesTemplate: async (params: {
-    exam_id: string;
-    exam_class_id?: string;
-  }) => {
+  downloadAbsencesTemplate: async (params: { exam_id: string; exam_class_id?: string }) => {
     return apiClient.requestFile('/exam-absence-penalty/absences/template', {
       method: 'GET',
       params,
@@ -3929,23 +4160,30 @@ export const examSeatingApi = {
     return apiClient.get(`/exams/${examId}/seating-maps/${mapId}`);
   },
 
-  create: async (examId: string, data: {
-    name: string;
-    rows: number;
-    columns: number;
-    start_seat_number?: number;
-    room_id?: string | null;
-  }) => {
+  create: async (
+    examId: string,
+    data: {
+      name: string;
+      rows: number;
+      columns: number;
+      start_seat_number?: number;
+      room_id?: string | null;
+    },
+  ) => {
     return apiClient.post(`/exams/${examId}/seating-maps`, data);
   },
 
-  update: async (examId: string, mapId: string, data: {
-    name?: string;
-    rows?: number;
-    columns?: number;
-    start_seat_number?: number;
-    room_id?: string | null;
-  }) => {
+  update: async (
+    examId: string,
+    mapId: string,
+    data: {
+      name?: string;
+      rows?: number;
+      columns?: number;
+      start_seat_number?: number;
+      room_id?: string | null;
+    },
+  ) => {
     return apiClient.put(`/exams/${examId}/seating-maps/${mapId}`, data);
   },
 
@@ -3953,41 +4191,57 @@ export const examSeatingApi = {
     return apiClient.delete(`/exams/${examId}/seating-maps/${mapId}`);
   },
 
-  syncAssignments: async (examId: string, mapId: string, data: {
-    revision: number;
-    assignments: Array<{
-      row_number: number;
-      column_number: number;
-      exam_student_id?: string | null;
-      is_locked?: boolean;
-      is_disabled?: boolean;
-    }>;
-  }) => {
+  syncAssignments: async (
+    examId: string,
+    mapId: string,
+    data: {
+      revision: number;
+      assignments: Array<{
+        row_number: number;
+        column_number: number;
+        exam_student_id?: string | null;
+        is_locked?: boolean;
+        is_disabled?: boolean;
+      }>;
+    },
+  ) => {
     return apiClient.put(`/exams/${examId}/seating-maps/${mapId}/assignments`, data);
   },
 
-  syncClassColors: async (examId: string, mapId: string, data: {
-    class_colors: Array<{
-      exam_class_id: string;
-      color_hex: string;
-    }>;
-  }) => {
+  syncClassColors: async (
+    examId: string,
+    mapId: string,
+    data: {
+      class_colors: Array<{
+        exam_class_id: string;
+        color_hex: string;
+      }>;
+    },
+  ) => {
     return apiClient.put(`/exams/${examId}/seating-maps/${mapId}/class-colors`, data);
   },
 
-  syncMapClasses: async (examId: string, mapId: string, data: {
-    exam_class_ids: string[];
-  }) => {
+  syncMapClasses: async (
+    examId: string,
+    mapId: string,
+    data: {
+      exam_class_ids: string[];
+    },
+  ) => {
     return apiClient.put(`/exams/${examId}/seating-maps/${mapId}/classes`, data);
   },
 
-  solve: async (examId: string, mapId: string, data: {
-    revision: number;
-    input_checksum: string;
-    strict_mode?: boolean;
-    seed?: number;
-    strategy?: 'default' | 'zigzag';
-  }) => {
+  solve: async (
+    examId: string,
+    mapId: string,
+    data: {
+      revision: number;
+      input_checksum: string;
+      strict_mode?: boolean;
+      seed?: number;
+      strategy?: 'default' | 'zigzag';
+    },
+  ) => {
     return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/solve`, data);
   },
 
@@ -4015,10 +4269,14 @@ export const examSeatingApi = {
     return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/roll-numbers/preview`, {});
   },
 
-  confirmMapRollNumbers: async (examId: string, mapId: string, data: {
-    revision: number;
-    input_checksum: string;
-  }) => {
+  confirmMapRollNumbers: async (
+    examId: string,
+    mapId: string,
+    data: {
+      revision: number;
+      input_checksum: string;
+    },
+  ) => {
     return apiClient.post(`/exams/${examId}/seating-maps/${mapId}/roll-numbers/confirm`, data);
   },
 };
@@ -4040,61 +4298,73 @@ export const examClassesApi = {
 
 // Exam Times (Timetable) API
 export const examTimesApi = {
-  list: async (examId: string, params?: {
-    exam_class_id?: string;
-    date?: string;
-    room_id?: string;
-  }) => {
+  list: async (
+    examId: string,
+    params?: {
+      exam_class_id?: string;
+      date?: string;
+      room_id?: string;
+    },
+  ) => {
     return apiClient.get(`/exams/${examId}/times`, params);
   },
 
-  create: async (examId: string, data: {
-    exam_class_id: string;
-    exam_subject_id?: string;
-    class_subject_id?: string;
-    date: string;
-    start_time: string;
-    end_time: string;
-    room_id?: string | null;
-    invigilator_id?: string | null;
-    notes?: string | null;
-    sort_order?: number;
-  }) => {
-    return apiClient.post(`/exams/${examId}/times`, data);
-  },
-
-  bulkReplace: async (examId: string, data: {
-    times: Array<{
+  create: async (
+    examId: string,
+    data: {
       exam_class_id: string;
-      exam_subject_id: string;
+      exam_subject_id?: string;
+      class_subject_id?: string;
       date: string;
       start_time: string;
       end_time: string;
       room_id?: string | null;
       invigilator_id?: string | null;
       notes?: string | null;
-    }>;
-  }) => {
+      sort_order?: number;
+    },
+  ) => {
+    return apiClient.post(`/exams/${examId}/times`, data);
+  },
+
+  bulkReplace: async (
+    examId: string,
+    data: {
+      times: Array<{
+        exam_class_id: string;
+        exam_subject_id: string;
+        date: string;
+        start_time: string;
+        end_time: string;
+        room_id?: string | null;
+        invigilator_id?: string | null;
+        notes?: string | null;
+      }>;
+    },
+  ) => {
     return apiClient.post<{ data: unknown[]; created_count: number }>(
       `/exams/${examId}/times/bulk-replace`,
-      data
+      data,
     );
   },
 
-  update: async (id: string, data: {
-    exam_class_id?: string;
-    exam_subject_id?: string;
-    class_subject_id?: string;
-    date?: string;
-    start_time?: string;
-    end_time?: string;
-    room_id?: string | null;
-    invigilator_id?: string | null;
-    notes?: string | null;
-    is_locked?: boolean;
-    sort_order?: number;
-    sync_slot?: boolean;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      exam_class_id?: string;
+      exam_subject_id?: string;
+      class_subject_id?: string;
+      date?: string;
+      start_time?: string;
+      end_time?: string;
+      room_id?: string | null;
+      invigilator_id?: string | null;
+      notes?: string | null;
+      is_locked?: boolean;
+      sort_order?: number;
+      sync_slot?: boolean;
+    },
+  ) => {
     return apiClient.put(`/exam-times/${id}`, data);
   },
 
@@ -4134,7 +4404,7 @@ export const examSubjectsApi = {
       total_marks?: number | null;
       passing_marks?: number | null;
       scheduled_at?: string | null;
-    }
+    },
   ) => {
     return apiClient.put(`/exam-subjects/${id}`, data);
   },
@@ -4186,10 +4456,7 @@ export const examStudentsApi = {
     return apiClient.post('/exam-students', data);
   },
 
-  bulkEnroll: async (data: {
-    exam_id: string;
-    exam_class_id: string;
-  }) => {
+  bulkEnroll: async (data: { exam_id: string; exam_class_id: string }) => {
     return apiClient.post('/exam-students/bulk-enroll', data);
   },
 
@@ -4238,7 +4505,7 @@ export const examResultsApi = {
       marks_obtained?: number | null;
       is_absent?: boolean;
       remarks?: string | null;
-    }
+    },
   ) => {
     return apiClient.put(`/exam-results/${id}`, data);
   },
@@ -4250,13 +4517,16 @@ export const examResultsApi = {
 
 // Exam Attendance API
 export const examAttendanceApi = {
-  list: async (examId: string, params?: {
-    exam_class_id?: string;
-    exam_time_id?: string;
-    exam_subject_id?: string;
-    status?: string;
-    date?: string;
-  }) => {
+  list: async (
+    examId: string,
+    params?: {
+      exam_class_id?: string;
+      exam_time_id?: string;
+      exam_subject_id?: string;
+      status?: string;
+      date?: string;
+    },
+  ) => {
     return apiClient.get(`/exams/${examId}/attendance`, params);
   },
 
@@ -4286,7 +4556,7 @@ export const examAttendanceApi = {
 
   reportDetail: async (
     examId: string,
-    params: { exam_class_id: string; exam_subject_id: string }
+    params: { exam_class_id: string; exam_subject_id: string },
   ) => {
     return apiClient.get(`/exams/${examId}/attendance/report/detail`, params);
   },
@@ -4303,42 +4573,55 @@ export const examAttendanceApi = {
     return apiClient.get(`/exams/${examId}/attendance/hall/maps`);
   },
 
-  hallStudents: async (examId: string, mapId: string, params: { date: string; start_time: string }) => {
+  hallStudents: async (
+    examId: string,
+    mapId: string,
+    params: { date: string; start_time: string },
+  ) => {
     return apiClient.get(`/exams/${examId}/attendance/hall/maps/${mapId}/students`, params);
   },
 
-  mark: async (examId: string, data: {
-    exam_time_id: string;
-    attendances: Array<{
-      student_id: string;
-      status: 'present' | 'absent' | 'late' | 'excused';
-      checked_in_at?: string | null;
-      seat_number?: string | null;
-      notes?: string | null;
-    }>;
-  }) => {
+  mark: async (
+    examId: string,
+    data: {
+      exam_time_id: string;
+      attendances: Array<{
+        student_id: string;
+        status: 'present' | 'absent' | 'late' | 'excused';
+        checked_in_at?: string | null;
+        seat_number?: string | null;
+        notes?: string | null;
+      }>;
+    },
+  ) => {
     return apiClient.post(`/exams/${examId}/attendance/mark`, data);
   },
 
-  markHall: async (examId: string, data: {
-    attendances: Array<{
-      student_id: string;
-      exam_time_id: string;
-      status: 'present' | 'absent' | 'late' | 'excused';
-      checked_in_at?: string | null;
-      seat_number?: string | null;
-      notes?: string | null;
-    }>;
-  }) => {
+  markHall: async (
+    examId: string,
+    data: {
+      attendances: Array<{
+        student_id: string;
+        exam_time_id: string;
+        status: 'present' | 'absent' | 'late' | 'excused';
+        checked_in_at?: string | null;
+        seat_number?: string | null;
+        notes?: string | null;
+      }>;
+    },
+  ) => {
     return apiClient.post(`/exams/${examId}/attendance/mark-hall`, data);
   },
 
-  scan: async (examId: string, data: {
-    exam_time_id: string;
-    roll_number: string;
-    status?: 'present' | 'absent' | 'late' | 'excused';
-    notes?: string | null;
-  }) => {
+  scan: async (
+    examId: string,
+    data: {
+      exam_time_id: string;
+      roll_number: string;
+      status?: 'present' | 'absent' | 'late' | 'excused';
+      notes?: string | null;
+    },
+  ) => {
     return apiClient.post(`/exams/${examId}/attendance/scan`, data);
   },
 
@@ -4346,12 +4629,15 @@ export const examAttendanceApi = {
     return apiClient.get(`/exams/${examId}/attendance/timeslot/${examTimeId}/scans`, params);
   },
 
-  update: async (id: string, data: {
-    status?: 'present' | 'absent' | 'late' | 'excused';
-    checked_in_at?: string | null;
-    seat_number?: string | null;
-    notes?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      status?: 'present' | 'absent' | 'late' | 'excused';
+      checked_in_at?: string | null;
+      seat_number?: string | null;
+      notes?: string | null;
+    },
+  ) => {
     return apiClient.put(`/exam-attendance/${id}`, data);
   },
 
@@ -4383,16 +4669,19 @@ export const gradesApi = {
     return apiClient.post('/grades', data);
   },
 
-  update: async (id: string, data: {
-    name_en?: string;
-    name_ar?: string;
-    name_ps?: string;
-    name_fa?: string;
-    min_percentage?: number;
-    max_percentage?: number;
-    order?: number;
-    is_pass?: boolean;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name_en?: string;
+      name_ar?: string;
+      name_ps?: string;
+      name_fa?: string;
+      min_percentage?: number;
+      max_percentage?: number;
+      order?: number;
+      is_pass?: boolean;
+    },
+  ) => {
     return apiClient.put(`/grades/${id}`, data);
   },
 
@@ -4400,7 +4689,6 @@ export const gradesApi = {
     return apiClient.delete(`/grades/${id}`);
   },
 };
-
 
 // ============================================
 // Finance Module APIs
@@ -4521,8 +4809,12 @@ export const exchangeRatesApi = {
   create: async (data: any) => apiClient.post('/exchange-rates', data),
   update: async (id: string, data: any) => apiClient.put(`/exchange-rates/${id}`, data),
   delete: async (id: string) => apiClient.delete(`/exchange-rates/${id}`),
-  convert: async (data: { from_currency_id: string; to_currency_id: string; amount: number; date?: string }) =>
-    apiClient.post('/exchange-rates/convert', data),
+  convert: async (data: {
+    from_currency_id: string;
+    to_currency_id: string;
+    amount: number;
+    date?: string;
+  }) => apiClient.post('/exchange-rates/convert', data),
 };
 
 // Finance Reports API
@@ -4556,7 +4848,8 @@ export const orgFinanceApi = {
       apiClient.get('/org-finance/income-categories', params),
     get: async (id: string) => apiClient.get(`/org-finance/income-categories/${id}`),
     create: async (data: any) => apiClient.post('/org-finance/income-categories', data),
-    update: async (id: string, data: any) => apiClient.put(`/org-finance/income-categories/${id}`, data),
+    update: async (id: string, data: any) =>
+      apiClient.put(`/org-finance/income-categories/${id}`, data),
     delete: async (id: string) => apiClient.delete(`/org-finance/income-categories/${id}`),
   },
   expenseCategories: {
@@ -4564,7 +4857,8 @@ export const orgFinanceApi = {
       apiClient.get('/org-finance/expense-categories', params),
     get: async (id: string) => apiClient.get(`/org-finance/expense-categories/${id}`),
     create: async (data: any) => apiClient.post('/org-finance/expense-categories', data),
-    update: async (id: string, data: any) => apiClient.put(`/org-finance/expense-categories/${id}`, data),
+    update: async (id: string, data: any) =>
+      apiClient.put(`/org-finance/expense-categories/${id}`, data),
     delete: async (id: string) => apiClient.delete(`/org-finance/expense-categories/${id}`),
   },
   projects: {
@@ -4595,52 +4889,93 @@ export const orgFinanceApi = {
     delete: async (id: string) => apiClient.delete(`/org-finance/currencies/${id}`),
   },
   exchangeRates: {
-    list: async (params?: { from_currency_id?: string; to_currency_id?: string; effective_date?: string; is_active?: boolean }) =>
-      apiClient.get('/org-finance/exchange-rates', params),
+    list: async (params?: {
+      from_currency_id?: string;
+      to_currency_id?: string;
+      effective_date?: string;
+      is_active?: boolean;
+    }) => apiClient.get('/org-finance/exchange-rates', params),
     get: async (id: string) => apiClient.get(`/org-finance/exchange-rates/${id}`),
-    convert: async (data: { from_currency_id: string; to_currency_id: string; amount: number; date?: string }) =>
-      apiClient.post('/org-finance/exchange-rates/convert', data),
+    convert: async (data: {
+      from_currency_id: string;
+      to_currency_id: string;
+      amount: number;
+      date?: string;
+    }) => apiClient.post('/org-finance/exchange-rates/convert', data),
     create: async (data: any) => apiClient.post('/org-finance/exchange-rates', data),
-    update: async (id: string, data: any) => apiClient.put(`/org-finance/exchange-rates/${id}`, data),
+    update: async (id: string, data: any) =>
+      apiClient.put(`/org-finance/exchange-rates/${id}`, data),
     delete: async (id: string) => apiClient.delete(`/org-finance/exchange-rates/${id}`),
   },
   incomeEntries: {
     list: async (params?: {
-      account_id?: string; income_category_id?: string; project_id?: string; facility_id?: string; donor_id?: string;
-      date_from?: string; date_to?: string; search?: string; page?: number; per_page?: number;
+      account_id?: string;
+      income_category_id?: string;
+      project_id?: string;
+      facility_id?: string;
+      donor_id?: string;
+      date_from?: string;
+      date_to?: string;
+      search?: string;
+      page?: number;
+      per_page?: number;
     }) => apiClient.get('/org-finance/income-entries', params),
     get: async (id: string) => apiClient.get(`/org-finance/income-entries/${id}`),
     create: async (data: any) => apiClient.post('/org-finance/income-entries', data),
-    update: async (id: string, data: any) => apiClient.put(`/org-finance/income-entries/${id}`, data),
+    update: async (id: string, data: any) =>
+      apiClient.put(`/org-finance/income-entries/${id}`, data),
     delete: async (id: string) => apiClient.delete(`/org-finance/income-entries/${id}`),
   },
   expenseEntries: {
     list: async (params?: {
-      account_id?: string; expense_category_id?: string; project_id?: string; facility_id?: string; status?: string;
-      date_from?: string; date_to?: string; search?: string; page?: number; per_page?: number;
+      account_id?: string;
+      expense_category_id?: string;
+      project_id?: string;
+      facility_id?: string;
+      status?: string;
+      date_from?: string;
+      date_to?: string;
+      search?: string;
+      page?: number;
+      per_page?: number;
     }) => apiClient.get('/org-finance/expense-entries', params),
     get: async (id: string) => apiClient.get(`/org-finance/expense-entries/${id}`),
     create: async (data: any) => apiClient.post('/org-finance/expense-entries', data),
-    update: async (id: string, data: any) => apiClient.put(`/org-finance/expense-entries/${id}`, data),
+    update: async (id: string, data: any) =>
+      apiClient.put(`/org-finance/expense-entries/${id}`, data),
     delete: async (id: string) => apiClient.delete(`/org-finance/expense-entries/${id}`),
   },
   dashboard: async (params?: { target_currency_id?: string }) =>
     apiClient.get('/org-finance/dashboard', params),
   reports: {
-    dailyCashbook: async (params: { date: string; account_id?: string; target_currency_id?: string }) =>
-      apiClient.get('/org-finance/reports/daily-cashbook', params),
-    incomeVsExpense: async (params?: { date_from?: string; date_to?: string; target_currency_id?: string }) =>
-      apiClient.get('/org-finance/reports/income-vs-expense', params),
+    dailyCashbook: async (params: {
+      date: string;
+      account_id?: string;
+      target_currency_id?: string;
+    }) => apiClient.get('/org-finance/reports/daily-cashbook', params),
+    incomeVsExpense: async (params?: {
+      date_from?: string;
+      date_to?: string;
+      target_currency_id?: string;
+    }) => apiClient.get('/org-finance/reports/income-vs-expense', params),
     projectSummary: async (params?: { status?: string; target_currency_id?: string }) =>
       apiClient.get('/org-finance/reports/project-summary', params),
-    donorSummary: async (params?: { start_date?: string; end_date?: string; target_currency_id?: string }) =>
-      apiClient.get('/org-finance/reports/donor-summary', params),
+    donorSummary: async (params?: {
+      start_date?: string;
+      end_date?: string;
+      target_currency_id?: string;
+    }) => apiClient.get('/org-finance/reports/donor-summary', params),
     accountBalances: async (params?: { target_currency_id?: string }) =>
       apiClient.get('/org-finance/reports/account-balances', params),
   },
   transfers: {
-    list: async (params?: { school_id?: string; date_from?: string; date_to?: string; page?: number; per_page?: number }) =>
-      apiClient.get('/org-finance/transfers', params),
+    list: async (params?: {
+      school_id?: string;
+      date_from?: string;
+      date_to?: string;
+      page?: number;
+      per_page?: number;
+    }) => apiClient.get('/org-finance/transfers', params),
     create: async (data: {
       school_id: string;
       org_account_id: string;
@@ -4654,30 +4989,44 @@ export const orgFinanceApi = {
     }) => apiClient.post('/org-finance/transfers', data),
   },
   schoolFinanceAccounts: async (schoolId: string) =>
-    apiClient.get<Array<{ id: string; name: string; code: string | null; currency_id: string; current_balance: string }>>(
-      `/org-finance/schools/${schoolId}/finance-accounts`
-    ),
+    apiClient.get<
+      Array<{
+        id: string;
+        name: string;
+        code: string | null;
+        currency_id: string;
+        current_balance: string;
+      }>
+    >(`/org-finance/schools/${schoolId}/finance-accounts`),
   schoolIncomeCategories: async (schoolId: string) =>
     apiClient.get<Array<{ id: string; name: string; code: string | null }>>(
-      `/org-finance/schools/${schoolId}/income-categories`
+      `/org-finance/schools/${schoolId}/income-categories`,
     ),
   facilityTypes: {
     list: async () => apiClient.get<Array<Record<string, unknown>>>('/org-finance/facility-types'),
-    get: async (id: string) => apiClient.get<Record<string, unknown>>(`/org-finance/facility-types/${id}`),
-    create: async (data: Record<string, unknown>) => apiClient.post('/org-finance/facility-types', data),
-    update: async (id: string, data: Record<string, unknown>) => apiClient.put(`/org-finance/facility-types/${id}`, data),
+    get: async (id: string) =>
+      apiClient.get<Record<string, unknown>>(`/org-finance/facility-types/${id}`),
+    create: async (data: Record<string, unknown>) =>
+      apiClient.post('/org-finance/facility-types', data),
+    update: async (id: string, data: Record<string, unknown>) =>
+      apiClient.put(`/org-finance/facility-types/${id}`, data),
     delete: async (id: string) => apiClient.delete(`/org-finance/facility-types/${id}`),
   },
   facilities: {
     list: async (params?: { facility_type_id?: string; is_active?: boolean }) =>
       apiClient.get<Array<Record<string, unknown>>>('/org-finance/facilities', params),
-    get: async (id: string) => apiClient.get<Record<string, unknown>>(`/org-finance/facilities/${id}`),
-    create: async (data: Record<string, unknown>) => apiClient.post('/org-finance/facilities', data),
-    update: async (id: string, data: Record<string, unknown>) => apiClient.put(`/org-finance/facilities/${id}`, data),
+    get: async (id: string) =>
+      apiClient.get<Record<string, unknown>>(`/org-finance/facilities/${id}`),
+    create: async (data: Record<string, unknown>) =>
+      apiClient.post('/org-finance/facilities', data),
+    update: async (id: string, data: Record<string, unknown>) =>
+      apiClient.put(`/org-finance/facilities/${id}`, data),
     delete: async (id: string) => apiClient.delete(`/org-finance/facilities/${id}`),
     staff: {
       list: async (facilityId: string) =>
-        apiClient.get<Array<Record<string, unknown>>>(`/org-finance/facilities/${facilityId}/staff`),
+        apiClient.get<Array<Record<string, unknown>>>(
+          `/org-finance/facilities/${facilityId}/staff`,
+        ),
       create: async (facilityId: string, data: Record<string, unknown>) =>
         apiClient.post(`/org-finance/facilities/${facilityId}/staff`, data),
       update: async (facilityId: string, id: string, data: Record<string, unknown>) =>
@@ -4687,7 +5036,9 @@ export const orgFinanceApi = {
     },
     maintenance: {
       list: async (facilityId: string) =>
-        apiClient.get<Array<Record<string, unknown>>>(`/org-finance/facilities/${facilityId}/maintenance`),
+        apiClient.get<Array<Record<string, unknown>>>(
+          `/org-finance/facilities/${facilityId}/maintenance`,
+        ),
       create: async (facilityId: string, data: Record<string, unknown>) =>
         apiClient.post(`/org-finance/facilities/${facilityId}/maintenance`, data),
       update: async (facilityId: string, id: string, data: Record<string, unknown>) =>
@@ -4697,14 +5048,21 @@ export const orgFinanceApi = {
     },
     documents: {
       list: async (facilityId: string) =>
-        apiClient.get<Array<Record<string, unknown>>>(`/org-finance/facilities/${facilityId}/documents`),
+        apiClient.get<Array<Record<string, unknown>>>(
+          `/org-finance/facilities/${facilityId}/documents`,
+        ),
       get: async (facilityId: string, id: string) =>
-        apiClient.get<Record<string, unknown>>(`/org-finance/facilities/${facilityId}/documents/${id}`),
+        apiClient.get<Record<string, unknown>>(
+          `/org-finance/facilities/${facilityId}/documents/${id}`,
+        ),
       create: async (facilityId: string, formData: FormData) =>
-        apiClient.request<Record<string, unknown>>(`/org-finance/facilities/${facilityId}/documents`, {
-          method: 'POST',
-          body: formData,
-        }),
+        apiClient.request<Record<string, unknown>>(
+          `/org-finance/facilities/${facilityId}/documents`,
+          {
+            method: 'POST',
+            body: formData,
+          },
+        ),
       delete: async (facilityId: string, id: string) =>
         apiClient.delete(`/org-finance/facilities/${facilityId}/documents/${id}`),
     },
@@ -4712,10 +5070,15 @@ export const orgFinanceApi = {
   financeDocuments: {
     list: async (params?: Record<string, string | undefined>) =>
       apiClient.get<Array<Record<string, unknown>>>('/org-finance/finance-documents', params),
-    get: async (id: string) => apiClient.get<Record<string, unknown>>(`/org-finance/finance-documents/${id}`),
+    get: async (id: string) =>
+      apiClient.get<Record<string, unknown>>(`/org-finance/finance-documents/${id}`),
     create: async (formData: FormData) =>
-      apiClient.request<Record<string, unknown>>('/org-finance/finance-documents', { method: 'POST', body: formData }),
-    delete: async (id: string) => apiClient.request(`/org-finance/finance-documents/${id}`, { method: 'DELETE' }),
+      apiClient.request<Record<string, unknown>>('/org-finance/finance-documents', {
+        method: 'POST',
+        body: formData,
+      }),
+    delete: async (id: string) =>
+      apiClient.request(`/org-finance/finance-documents/${id}`, { method: 'DELETE' }),
   },
 };
 
@@ -4830,7 +5193,8 @@ export const dmsApi = {
     create: async (data: any) => apiClient.post('/dms/outgoing', data),
     update: async (id: string, data: any) => apiClient.put(`/dms/outgoing/${id}`, data),
     delete: async (id: string) => apiClient.delete(`/dms/outgoing/${id}`),
-    downloadPdf: async (id: string) => apiClient.requestFile(`/dms/outgoing/${id}/pdf`, { method: 'GET' }),
+    downloadPdf: async (id: string) =>
+      apiClient.requestFile(`/dms/outgoing/${id}/pdf`, { method: 'GET' }),
   },
 
   templates: {
@@ -4839,16 +5203,21 @@ export const dmsApi = {
     create: async (data: any) => apiClient.post('/dms/templates', data),
     update: async (id: string, data: any) => apiClient.put(`/dms/templates/${id}`, data),
     delete: async (id: string) => apiClient.delete(`/dms/templates/${id}`),
-    duplicate: async (id: string, data?: { name?: string }) => apiClient.post(`/dms/templates/${id}/duplicate`, data || {}),
+    duplicate: async (id: string, data?: { name?: string }) =>
+      apiClient.post(`/dms/templates/${id}/duplicate`, data || {}),
     preview: async (
       id: string,
       variables?: Record<string, string>,
-      options?: { recipient_type?: string; table_payload?: any }
-    ) => apiClient.post(`/dms/templates/${id}/preview`, { variables: variables || {}, ...(options || {}) }),
+      options?: { recipient_type?: string; table_payload?: any },
+    ) =>
+      apiClient.post(`/dms/templates/${id}/preview`, {
+        variables: variables || {},
+        ...(options || {}),
+      }),
     previewPdf: async (
       id: string,
       variables?: Record<string, string>,
-      options?: { recipient_type?: string; recipient_id?: string; table_payload?: any }
+      options?: { recipient_type?: string; recipient_id?: string; table_payload?: any },
     ) => {
       const result = await apiClient.requestFile(`/dms/templates/${id}/preview-pdf`, {
         method: 'POST',
@@ -4862,7 +5231,8 @@ export const dmsApi = {
       recipient_type?: string;
       table_payload?: any;
     }) => apiClient.post(`/dms/templates/preview-draft`, payload),
-    getAvailableFields: async (recipientType: string) => apiClient.get('/dms/templates/fields/available', { recipient_type: recipientType }),
+    getAvailableFields: async (recipientType: string) =>
+      apiClient.get('/dms/templates/fields/available', { recipient_type: recipientType }),
   },
 
   letterheads: {
@@ -4871,9 +5241,13 @@ export const dmsApi = {
     create: async (data: FormData) => apiClient.post('/dms/letterheads', data),
     update: async (id: string, data: FormData) => apiClient.put(`/dms/letterheads/${id}`, data),
     delete: async (id: string) => apiClient.delete(`/dms/letterheads/${id}`),
-    download: async (id: string) => apiClient.requestFile(`/dms/letterheads/${id}/download`, { method: 'GET' }),
+    download: async (id: string) =>
+      apiClient.requestFile(`/dms/letterheads/${id}/download`, { method: 'GET' }),
     downloadImage: async (id: string) =>
-      apiClient.requestFile(`/dms/letterheads/${id}/serve`, { method: 'GET', params: { variant: 'image' } }),
+      apiClient.requestFile(`/dms/letterheads/${id}/serve`, {
+        method: 'GET',
+        params: { variant: 'image' },
+      }),
     preview: async (id: string) => apiClient.get(`/dms/letterheads/${id}/preview`),
   },
 
@@ -4900,9 +5274,11 @@ export const dmsApi = {
   },
 
   files: {
-    list: async (params: { owner_type: 'incoming' | 'outgoing'; owner_id: string }) => apiClient.get('/dms/files', params),
+    list: async (params: { owner_type: 'incoming' | 'outgoing'; owner_id: string }) =>
+      apiClient.get('/dms/files', params),
     upload: async (data: FormData) => apiClient.post('/dms/files', data),
-    download: async (id: string) => apiClient.requestFile(`/dms/files/${id}/download`, { method: 'GET' }),
+    download: async (id: string) =>
+      apiClient.requestFile(`/dms/files/${id}/download`, { method: 'GET' }),
   },
 };
 
@@ -4944,20 +5320,23 @@ export const questionsApi = {
     return apiClient.post('/exam/questions', data);
   },
 
-  update: async (id: string, data: {
-    subject_id?: string;
-    class_academic_year_id?: string | null;
-    type?: string;
-    difficulty?: string;
-    marks?: number;
-    text?: string;
-    text_rtl?: boolean;
-    options?: Array<{ id: string; label?: string; text: string; is_correct?: boolean }> | null;
-    correct_answer?: string | null;
-    reference?: string | null;
-    tags?: string[] | null;
-    is_active?: boolean;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      subject_id?: string;
+      class_academic_year_id?: string | null;
+      type?: string;
+      difficulty?: string;
+      marks?: number;
+      text?: string;
+      text_rtl?: boolean;
+      options?: Array<{ id: string; label?: string; text: string; is_correct?: boolean }> | null;
+      correct_answer?: string | null;
+      reference?: string | null;
+      tags?: string[] | null;
+      is_active?: boolean;
+    },
+  ) => {
     return apiClient.put(`/exam/questions/${id}`, data);
   },
 
@@ -5011,21 +5390,24 @@ export const examPaperTemplatesApi = {
     return apiClient.post('/exam/paper-templates', data);
   },
 
-  update: async (id: string, data: {
-    exam_id?: string | null;
-    exam_subject_id?: string | null;
-    subject_id?: string;
-    class_academic_year_id?: string | null;
-    title?: string;
-    language?: string;
-    total_marks?: number | null;
-    duration_minutes?: number | null;
-    header_html?: string | null;
-    footer_html?: string | null;
-    instructions?: string | null;
-    is_default_for_exam_subject?: boolean;
-    is_active?: boolean;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      exam_id?: string | null;
+      exam_subject_id?: string | null;
+      subject_id?: string;
+      class_academic_year_id?: string | null;
+      title?: string;
+      language?: string;
+      total_marks?: number | null;
+      duration_minutes?: number | null;
+      header_html?: string | null;
+      footer_html?: string | null;
+      instructions?: string | null;
+      is_default_for_exam_subject?: boolean;
+      is_active?: boolean;
+    },
+  ) => {
     return apiClient.put(`/exam/paper-templates/${id}`, data);
   },
 
@@ -5038,24 +5420,31 @@ export const examPaperTemplatesApi = {
   },
 
   // Item management
-  addItem: async (templateId: string, data: {
-    question_id: string;
-    section_label?: string | null;
-    position?: number;
-    marks_override?: number | null;
-    is_mandatory?: boolean;
-    notes?: string | null;
-  }) => {
+  addItem: async (
+    templateId: string,
+    data: {
+      question_id: string;
+      section_label?: string | null;
+      position?: number;
+      marks_override?: number | null;
+      is_mandatory?: boolean;
+      notes?: string | null;
+    },
+  ) => {
     return apiClient.post(`/exam/paper-templates/${templateId}/items`, data);
   },
 
-  updateItem: async (templateId: string, itemId: string, data: {
-    section_label?: string | null;
-    position?: number;
-    marks_override?: number | null;
-    is_mandatory?: boolean;
-    notes?: string | null;
-  }) => {
+  updateItem: async (
+    templateId: string,
+    itemId: string,
+    data: {
+      section_label?: string | null;
+      position?: number;
+      marks_override?: number | null;
+      is_mandatory?: boolean;
+      notes?: string | null;
+    },
+  ) => {
     return apiClient.put(`/exam/paper-templates/${templateId}/items/${itemId}`, data);
   },
 
@@ -5063,11 +5452,14 @@ export const examPaperTemplatesApi = {
     return apiClient.delete(`/exam/paper-templates/${templateId}/items/${itemId}`);
   },
 
-  reorderItems: async (templateId: string, items: Array<{
-    id: string;
-    position: number;
-    section_label?: string | null;
-  }>) => {
+  reorderItems: async (
+    templateId: string,
+    items: Array<{
+      id: string;
+      position: number;
+      section_label?: string | null;
+    }>,
+  ) => {
     return apiClient.post(`/exam/paper-templates/${templateId}/reorder`, { items });
   },
 
@@ -5077,12 +5469,15 @@ export const examPaperTemplatesApi = {
   },
 
   // Print status management
-  updatePrintStatus: async (id: string, data: {
-    print_status?: 'not_printed' | 'printing' | 'printed' | 'cancelled';
-    copies_printed?: number;
-    increment?: boolean;
-    print_notes?: string | null;
-  }) => {
+  updatePrintStatus: async (
+    id: string,
+    data: {
+      print_status?: 'not_printed' | 'printing' | 'printed' | 'cancelled';
+      copies_printed?: number;
+      increment?: boolean;
+      print_notes?: string | null;
+    },
+  ) => {
     return apiClient.post(`/exam/paper-templates/${id}/print-status`, data);
   },
 
@@ -5109,15 +5504,18 @@ export const examPaperTemplatesApi = {
     }) => {
       return apiClient.post('/exam/paper-template-files', data);
     },
-    update: async (id: string, data: {
-      name?: string;
-      description?: string | null;
-      language?: 'en' | 'ps' | 'fa' | 'ar';
-      template_html?: string;
-      css_styles?: string | null;
-      is_default?: boolean;
-      is_active?: boolean;
-    }) => {
+    update: async (
+      id: string,
+      data: {
+        name?: string;
+        description?: string | null;
+        language?: 'en' | 'ps' | 'fa' | 'ar';
+        template_html?: string;
+        css_styles?: string | null;
+        is_default?: boolean;
+        is_active?: boolean;
+      },
+    ) => {
       return apiClient.put(`/exam/paper-template-files/${id}`, data);
     },
     delete: async (id: string) => {
@@ -5135,15 +5533,21 @@ export const examPaperTemplatesApi = {
   preview: async (id: string, variant?: number) => {
     return apiClient.get(`/exam/paper-templates/${id}/preview`, { variant });
   },
-  generate: async (id: string, data: {
-    variants: number[];
-    page_layout?: 'A4_portrait' | 'A4_landscape';
-  }) => {
+  generate: async (
+    id: string,
+    data: {
+      variants: number[];
+      page_layout?: 'A4_portrait' | 'A4_landscape';
+    },
+  ) => {
     return apiClient.post(`/exam/paper-templates/${id}/generate`, data);
   },
-  generateHtml: async (id: string, data: {
-    variant: number;
-  }) => {
+  generateHtml: async (
+    id: string,
+    data: {
+      variant: number;
+    },
+  ) => {
     return apiClient.post(`/exam/paper-templates/${id}/generate-html`, data);
   },
 };
@@ -5159,7 +5563,9 @@ export const examPaperPreviewApi = {
   },
 
   examSubjectPreview: async (examSubjectId: string, showAnswers?: boolean) => {
-    return apiClient.get(`/exam-subjects/${examSubjectId}/paper-preview`, { show_answers: showAnswers });
+    return apiClient.get(`/exam-subjects/${examSubjectId}/paper-preview`, {
+      show_answers: showAnswers,
+    });
   },
 
   availableTemplates: async (examSubjectId: string) => {
@@ -5167,7 +5573,9 @@ export const examPaperPreviewApi = {
   },
 
   setDefaultTemplate: async (examSubjectId: string, templateId: string) => {
-    return apiClient.post(`/exam-subjects/${examSubjectId}/set-default-template`, { template_id: templateId });
+    return apiClient.post(`/exam-subjects/${examSubjectId}/set-default-template`, {
+      template_id: templateId,
+    });
   },
 };
 
@@ -5196,60 +5604,71 @@ export const graduationBatchesApi = {
     require_attendance?: boolean;
     exclude_approved_leaves?: boolean;
   }) => apiClient.post('/graduation/batches', data),
-  update: async (id: string, data: {
-    academic_year_id?: string;
-    class_id?: string;
-    exam_id?: string;
-    exam_ids?: string[];
-    exam_weights?: Record<string, number>;
-    graduation_date?: string;
-    graduation_type?: 'final_year' | 'promotion' | 'transfer';
-    from_class_id?: string;
-    to_class_id?: string;
-    min_attendance_percentage?: number;
-    require_attendance?: boolean;
-    exclude_approved_leaves?: boolean;
-  }, params?: { school_id?: string }) =>
-    apiClient.put(`/graduation/batches/${id}`, { ...data, ...params }),
+  update: async (
+    id: string,
+    data: {
+      academic_year_id?: string;
+      class_id?: string;
+      exam_id?: string;
+      exam_ids?: string[];
+      exam_weights?: Record<string, number>;
+      graduation_date?: string;
+      graduation_type?: 'final_year' | 'promotion' | 'transfer';
+      from_class_id?: string;
+      to_class_id?: string;
+      min_attendance_percentage?: number;
+      require_attendance?: boolean;
+      exclude_approved_leaves?: boolean;
+    },
+    params?: { school_id?: string },
+  ) => apiClient.put(`/graduation/batches/${id}`, { ...data, ...params }),
   delete: async (id: string, params?: { school_id?: string }) => {
     // DELETE method doesn't support params, so we need to add school_id to URL if needed
-    const url = params?.school_id ? `/graduation/batches/${id}?school_id=${params.school_id}` : `/graduation/batches/${id}`;
+    const url = params?.school_id
+      ? `/graduation/batches/${id}?school_id=${params.school_id}`
+      : `/graduation/batches/${id}`;
     return apiClient.delete(url);
   },
   generateStudents: async (id: string, params?: { school_id?: string }) =>
     apiClient.post(`/graduation/batches/${id}/generate-students`, params),
   approve: async (id: string, params?: { school_id?: string }) =>
     apiClient.post(`/graduation/batches/${id}/approve`, params),
-  issueCertificates: async (id: string, data: {
-    template_id: string;
-    school_id?: string;
-    starting_number?: number;
-    prefix?: string;
-    certificate_type?: string;
-    padding?: number;
-  }) =>
-    apiClient.post(`/graduation/batches/${id}/issue-certificates`, data),
+  issueCertificates: async (
+    id: string,
+    data: {
+      template_id: string;
+      school_id?: string;
+      starting_number?: number;
+      prefix?: string;
+      certificate_type?: string;
+      padding?: number;
+    },
+  ) => apiClient.post(`/graduation/batches/${id}/issue-certificates`, data),
 };
 
 export const certificateTemplatesV2Api = {
   list: async (params?: { school_id?: string; type?: string }) =>
     apiClient.get('/certificates/templates', params),
   get: async (id: string) => apiClient.get(`/certificates/templates/${id}`),
-  create: async (data: FormData | {
-    school_id?: string;
-    type: string;
-    title: string;
-    body_html?: string;
-    layout_config?: any;
-    background_image?: File | null;
-    page_size?: 'A4' | 'A5' | 'custom';
-    custom_width_mm?: number | null;
-    custom_height_mm?: number | null;
-    rtl?: boolean;
-    font_family?: string | null;
-    is_active?: boolean;
-    description?: string | null;
-  }) => {
+  create: async (
+    data:
+      | FormData
+      | {
+          school_id?: string;
+          type: string;
+          title: string;
+          body_html?: string;
+          layout_config?: any;
+          background_image?: File | null;
+          page_size?: 'A4' | 'A5' | 'custom';
+          custom_width_mm?: number | null;
+          custom_height_mm?: number | null;
+          rtl?: boolean;
+          font_family?: string | null;
+          is_active?: boolean;
+          description?: string | null;
+        },
+  ) => {
     // If data is FormData, use it directly; otherwise convert to FormData
     if (data instanceof FormData) {
       return apiClient.post('/certificates/templates', data);
@@ -5268,29 +5687,36 @@ export const certificateTemplatesV2Api = {
     if (data.layout_config) formData.append('layout_config', JSON.stringify(data.layout_config));
     if (data.background_image) formData.append('background_image', data.background_image);
     if (data.page_size) formData.append('page_size', data.page_size);
-    if (data.custom_width_mm !== undefined) formData.append('custom_width_mm', String(data.custom_width_mm));
-    if (data.custom_height_mm !== undefined) formData.append('custom_height_mm', String(data.custom_height_mm));
+    if (data.custom_width_mm !== undefined)
+      formData.append('custom_width_mm', String(data.custom_width_mm));
+    if (data.custom_height_mm !== undefined)
+      formData.append('custom_height_mm', String(data.custom_height_mm));
     if (data.rtl !== undefined) formData.append('rtl', data.rtl ? '1' : '0');
     if (data.font_family) formData.append('font_family', data.font_family);
     if (data.is_active !== undefined) formData.append('is_active', data.is_active ? '1' : '0');
     if (data.description !== undefined) formData.append('description', data.description || '');
     return apiClient.post('/certificates/templates', formData);
   },
-  update: async (id: string, data: FormData | {
-    school_id?: string;
-    type?: string;
-    title?: string;
-    body_html?: string;
-    layout_config?: any;
-    background_image?: File | null;
-    page_size?: 'A4' | 'A5' | 'custom';
-    custom_width_mm?: number | null;
-    custom_height_mm?: number | null;
-    rtl?: boolean;
-    font_family?: string | null;
-    is_active?: boolean;
-    description?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data:
+      | FormData
+      | {
+          school_id?: string;
+          type?: string;
+          title?: string;
+          body_html?: string;
+          layout_config?: any;
+          background_image?: File | null;
+          page_size?: 'A4' | 'A5' | 'custom';
+          custom_width_mm?: number | null;
+          custom_height_mm?: number | null;
+          rtl?: boolean;
+          font_family?: string | null;
+          is_active?: boolean;
+          description?: string | null;
+        },
+  ) => {
     // If data is FormData, use it directly; otherwise convert to FormData
     if (data instanceof FormData) {
       // Laravel doesn't support PUT with FormData, use POST with _method
@@ -5310,11 +5736,14 @@ export const certificateTemplatesV2Api = {
       }
     }
     if (data.body_html !== undefined) formData.append('body_html', data.body_html || '');
-    if (data.layout_config !== undefined) formData.append('layout_config', JSON.stringify(data.layout_config));
+    if (data.layout_config !== undefined)
+      formData.append('layout_config', JSON.stringify(data.layout_config));
     if (data.background_image) formData.append('background_image', data.background_image);
     if (data.page_size) formData.append('page_size', data.page_size);
-    if (data.custom_width_mm !== undefined) formData.append('custom_width_mm', String(data.custom_width_mm));
-    if (data.custom_height_mm !== undefined) formData.append('custom_height_mm', String(data.custom_height_mm));
+    if (data.custom_width_mm !== undefined)
+      formData.append('custom_width_mm', String(data.custom_width_mm));
+    if (data.custom_height_mm !== undefined)
+      formData.append('custom_height_mm', String(data.custom_height_mm));
     if (data.rtl !== undefined) formData.append('rtl', data.rtl ? '1' : '0');
     if (data.font_family !== undefined) formData.append('font_family', data.font_family || '');
     if (data.is_active !== undefined) formData.append('is_active', data.is_active ? '1' : '0');
@@ -5338,7 +5767,10 @@ export const issuedCertificatesApi = {
   }) => apiClient.get('/certificates/issued', params),
   get: async (id: string) => apiClient.get(`/certificates/issued/${id}`),
   getCertificateData: async (id: string, schoolId?: string) =>
-    apiClient.get(`/certificates/issued/${id}/data`, schoolId ? { school_id: schoolId } : undefined),
+    apiClient.get(
+      `/certificates/issued/${id}/data`,
+      schoolId ? { school_id: schoolId } : undefined,
+    ),
   revoke: async (id: string, reason: string, schoolId?: string) =>
     apiClient.post(`/certificates/issued/${id}/revoke`, {
       reason,
@@ -5391,26 +5823,31 @@ export const studentIdCardsApi = {
     notes?: string | null;
   }) => apiClient.post('/student-id-cards/assign', data),
 
-  update: async (id: string, data: {
-    card_number?: string | null;
-    card_fee?: number;
-    card_fee_paid?: boolean;
-    card_fee_paid_date?: string | null;
-    is_printed?: boolean;
-    printed_at?: string | null;
-    printed_by?: string | null;
-    notes?: string | null;
-  }) => apiClient.put(`/student-id-cards/${id}`, data),
+  update: async (
+    id: string,
+    data: {
+      card_number?: string | null;
+      card_fee?: number;
+      card_fee_paid?: boolean;
+      card_fee_paid_date?: string | null;
+      is_printed?: boolean;
+      printed_at?: string | null;
+      printed_by?: string | null;
+      notes?: string | null;
+    },
+  ) => apiClient.put(`/student-id-cards/${id}`, data),
 
-  markPrinted: async (id: string) =>
-    apiClient.post(`/student-id-cards/${id}/mark-printed`),
+  markPrinted: async (id: string) => apiClient.post(`/student-id-cards/${id}/mark-printed`),
 
-  markFeePaid: async (id: string, data: {
-    card_fee_paid: boolean;
-    card_fee_paid_date?: string;
-    account_id?: string | null;
-    income_category_id?: string | null;
-  }) => apiClient.post(`/student-id-cards/${id}/mark-fee-paid`, data),
+  markFeePaid: async (
+    id: string,
+    data: {
+      card_fee_paid: boolean;
+      card_fee_paid_date?: string;
+      account_id?: string | null;
+      income_category_id?: string | null;
+    },
+  ) => apiClient.post(`/student-id-cards/${id}/mark-fee-paid`, data),
 
   delete: async (id: string) => apiClient.delete(`/student-id-cards/${id}`),
 };
@@ -5448,45 +5885,42 @@ export const eventTypesApi = {
   list: async (params?: { school_id?: string; is_active?: boolean; search?: string }) =>
     apiClient.get<EventType[]>('/event-types', params),
 
-  get: async (id: string) =>
-    apiClient.get<EventType>(`/event-types/${id}`),
+  get: async (id: string) => apiClient.get<EventType>(`/event-types/${id}`),
 
-  create: async (data: CreateEventTypeRequest) =>
-    apiClient.post<EventType>('/event-types', data),
+  create: async (data: CreateEventTypeRequest) => apiClient.post<EventType>('/event-types', data),
 
   update: async (id: string, data: UpdateEventTypeRequest) =>
     apiClient.put<EventType>(`/event-types/${id}`, data),
 
-  delete: async (id: string) =>
-    apiClient.delete(`/event-types/${id}`),
+  delete: async (id: string) => apiClient.delete(`/event-types/${id}`),
 
   // Form Designer
   getFields: async (id: string) =>
-    apiClient.get<{ field_groups: EventTypeFieldGroup[]; fields: EventTypeField[] }>(`/event-types/${id}/fields`),
+    apiClient.get<{ field_groups: EventTypeFieldGroup[]; fields: EventTypeField[] }>(
+      `/event-types/${id}/fields`,
+    ),
 
   saveFields: async (id: string, data: SaveFieldsRequest) =>
-    apiClient.post<{ field_groups: EventTypeFieldGroup[]; fields: EventTypeField[] }>(`/event-types/${id}/fields`, data),
+    apiClient.post<{ field_groups: EventTypeFieldGroup[]; fields: EventTypeField[] }>(
+      `/event-types/${id}/fields`,
+      data,
+    ),
 };
 
 // Events API
 export const eventsApi = {
-  list: async (params?: EventsQuery) =>
-    apiClient.get<PaginatedResponse<Event>>('/events', params),
+  list: async (params?: EventsQuery) => apiClient.get<PaginatedResponse<Event>>('/events', params),
 
-  get: async (id: string) =>
-    apiClient.get<Event>(`/events/${id}`),
+  get: async (id: string) => apiClient.get<Event>(`/events/${id}`),
 
-  create: async (data: CreateEventRequest) =>
-    apiClient.post<Event>('/events', data),
+  create: async (data: CreateEventRequest) => apiClient.post<Event>('/events', data),
 
   update: async (id: string, data: UpdateEventRequest) =>
     apiClient.put<Event>(`/events/${id}`, data),
 
-  delete: async (id: string) =>
-    apiClient.delete(`/events/${id}`),
+  delete: async (id: string) => apiClient.delete(`/events/${id}`),
 
-  getStats: async (id: string) =>
-    apiClient.get<EventStats>(`/events/${id}/stats`),
+  getStats: async (id: string) => apiClient.get<EventStats>(`/events/${id}/stats`),
 };
 
 // Event Guests API
@@ -5515,9 +5949,13 @@ export const eventGuestsApi = {
     formData.append('photo', file, file.name);
 
     try {
-      const result = await apiClient.post<{ photo_url: string; photo_thumb_url: string }>(`/guests/${guestId}/photo`, formData, {
-        headers: {}, // Let browser set Content-Type with boundary (important for Android Chrome)
-      });
+      const result = await apiClient.post<{ photo_url: string; photo_thumb_url: string }>(
+        `/guests/${guestId}/photo`,
+        formData,
+        {
+          headers: {}, // Let browser set Content-Type with boundary (important for Android Chrome)
+        },
+      );
 
       return result;
     } catch (error: any) {
@@ -5538,7 +5976,10 @@ export const eventCheckinApi = {
     apiClient.post<CheckinResponse>(`/events/${eventId}/checkin`, data),
 
   lookup: async (eventId: string, data: { qr_token?: string; guest_code?: string }) =>
-    apiClient.post<{ found: boolean; guest?: EventGuest; error?: string }>(`/events/${eventId}/checkin/lookup`, data),
+    apiClient.post<{ found: boolean; guest?: EventGuest; error?: string }>(
+      `/events/${eventId}/checkin/lookup`,
+      data,
+    ),
 
   history: async (eventId: string, params?: { date?: string; page?: number; per_page?: number }) =>
     apiClient.get<PaginatedResponse<EventCheckin>>(`/events/${eventId}/checkin/history`, params),
@@ -5549,8 +5990,7 @@ export const eventCheckinApi = {
 
 // Event Users API
 export const eventUsersApi = {
-  list: async (eventId: string) =>
-    apiClient.get<EventUser[]>(`/events/${eventId}/users`),
+  list: async (eventId: string) => apiClient.get<EventUser[]>(`/events/${eventId}/users`),
 
   create: async (eventId: string, data: CreateEventUserRequest) =>
     apiClient.post<EventUser>(`/events/${eventId}/users`, data),
@@ -5576,10 +6016,7 @@ export const phoneBookApi = {
 
 // Help Center Categories API
 export const helpCenterCategoriesApi = {
-  list: async (params?: {
-    is_active?: boolean;
-    parent_id?: string | null;
-  }) => {
+  list: async (params?: { is_active?: boolean; parent_id?: string | null }) => {
     return apiClient.get('/help-center/categories', params);
   },
 
@@ -5604,16 +6041,19 @@ export const helpCenterCategoriesApi = {
     return apiClient.post('/help-center/categories', data);
   },
 
-  update: async (id: string, data: {
-    name?: string;
-    slug?: string | null;
-    description?: string | null;
-    icon?: string | null;
-    color?: string | null;
-    order?: number;
-    is_active?: boolean;
-    parent_id?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      slug?: string | null;
+      description?: string | null;
+      icon?: string | null;
+      color?: string | null;
+      order?: number;
+      is_active?: boolean;
+      parent_id?: string | null;
+    },
+  ) => {
     return apiClient.put(`/help-center/categories/${id}`, data);
   },
 
@@ -5688,24 +6128,27 @@ export const helpCenterArticlesApi = {
     return apiClient.post('/help-center/articles', data);
   },
 
-  update: async (id: string, data: {
-    category_id?: string;
-    title?: string;
-    slug?: string | null;
-    excerpt?: string | null;
-    content?: string;
-    content_type?: 'markdown' | 'html';
-    language?: 'en' | 'ps' | 'fa' | 'ar';
-    featured_image_url?: string | null;
-    is_published?: boolean;
-    is_featured?: boolean;
-    is_pinned?: boolean;
-    meta_title?: string | null;
-    meta_description?: string | null;
-    tags?: string[];
-    order?: number;
-    related_article_ids?: string[];
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      category_id?: string;
+      title?: string;
+      slug?: string | null;
+      excerpt?: string | null;
+      content?: string;
+      content_type?: 'markdown' | 'html';
+      language?: 'en' | 'ps' | 'fa' | 'ar';
+      featured_image_url?: string | null;
+      is_published?: boolean;
+      is_featured?: boolean;
+      is_pinned?: boolean;
+      meta_title?: string | null;
+      meta_description?: string | null;
+      tags?: string[];
+      order?: number;
+      related_article_ids?: string[];
+    },
+  ) => {
     return apiClient.put(`/help-center/articles/${id}`, data);
   },
 
@@ -5774,16 +6217,19 @@ export const websitePagesApi = {
   }) => {
     return apiClient.post('/website/pages', data);
   },
-  update: async (id: string, data: {
-    slug?: string;
-    title?: string;
-    status?: string;
-    content_json?: any[];
-    seo_title?: string | null;
-    seo_description?: string | null;
-    seo_image_path?: string | null;
-    published_at?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      slug?: string;
+      title?: string;
+      status?: string;
+      content_json?: any[];
+      seo_title?: string | null;
+      seo_description?: string | null;
+      seo_image_path?: string | null;
+      published_at?: string | null;
+    },
+  ) => {
     return apiClient.put(`/website/pages/${id}`, data);
   },
   delete: async (id: string) => {
@@ -5808,17 +6254,20 @@ export const websitePostsApi = {
   }) => {
     return apiClient.post('/website/posts', data);
   },
-  update: async (id: string, data: {
-    slug?: string;
-    title?: string;
-    status?: string;
-    excerpt?: string | null;
-    content_json?: any[];
-    seo_title?: string | null;
-    seo_description?: string | null;
-    seo_image_path?: string | null;
-    published_at?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      slug?: string;
+      title?: string;
+      status?: string;
+      excerpt?: string | null;
+      content_json?: any[];
+      seo_title?: string | null;
+      seo_description?: string | null;
+      seo_image_path?: string | null;
+      published_at?: string | null;
+    },
+  ) => {
     return apiClient.put(`/website/posts/${id}`, data);
   },
   delete: async (id: string) => {
@@ -5841,15 +6290,18 @@ export const websiteEventsApi = {
   }) => {
     return apiClient.post('/website/events', data);
   },
-  update: async (id: string, data: {
-    title?: string;
-    location?: string | null;
-    starts_at?: string;
-    ends_at?: string | null;
-    is_public?: boolean;
-    summary?: string | null;
-    content_json?: any[];
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      title?: string;
+      location?: string | null;
+      starts_at?: string;
+      ends_at?: string | null;
+      is_public?: boolean;
+      summary?: string | null;
+      content_json?: any[];
+    },
+  ) => {
     return apiClient.put(`/website/events/${id}`, data);
   },
   delete: async (id: string) => {
@@ -5871,14 +6323,17 @@ export const websiteAnnouncementsApi = {
   }) => {
     return apiClient.post('/website/announcements', data);
   },
-  update: async (id: string, data: {
-    title?: string;
-    content?: string | null;
-    status?: string;
-    published_at?: string | null;
-    expires_at?: string | null;
-    is_pinned?: boolean;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      title?: string;
+      content?: string | null;
+      status?: string;
+      published_at?: string | null;
+      expires_at?: string | null;
+      is_pinned?: boolean;
+    },
+  ) => {
     return apiClient.put(`/website/announcements/${id}`, data);
   },
   delete: async (id: string) => {
@@ -5890,7 +6345,10 @@ export const websitePublicBooksApi = {
   uploadFile: async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    return apiClient.post<{ path: string; file_size?: number }>('/website/public-books/upload-file', formData);
+    return apiClient.post<{ path: string; file_size?: number }>(
+      '/website/public-books/upload-file',
+      formData,
+    );
   },
   uploadCover: async (file: File) => {
     const formData = new FormData();
@@ -5919,16 +6377,22 @@ export const websiteMediaApi = {
     if (categoryId) {
       formData.append('category_id', categoryId);
     }
-    return apiClient.post<{ url: string; path: string; media_id: string }>('/website/media/upload-image', formData);
+    return apiClient.post<{ url: string; path: string; media_id: string }>(
+      '/website/media/upload-image',
+      formData,
+    );
   },
-  update: async (id: string, data: {
-    category_id?: string | null;
-    type?: string;
-    file_path?: string;
-    file_name?: string | null;
-    alt_text?: string | null;
-    metadata?: Record<string, any>;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      category_id?: string | null;
+      type?: string;
+      file_path?: string;
+      file_name?: string | null;
+      alt_text?: string | null;
+      metadata?: Record<string, any>;
+    },
+  ) => {
     return apiClient.put(`/website/media/${id}`, data);
   },
   delete: async (id: string) => {
@@ -5950,14 +6414,17 @@ export const websiteMediaCategoriesApi = {
   }) => {
     return apiClient.post('/website/media-categories', data);
   },
-  update: async (id: string, data: {
-    name?: string;
-    slug?: string | null;
-    description?: string | null;
-    cover_image_path?: string | null;
-    sort_order?: number | null;
-    is_active?: boolean;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      slug?: string | null;
+      description?: string | null;
+      cover_image_path?: string | null;
+      sort_order?: number | null;
+      is_active?: boolean;
+    },
+  ) => {
     return apiClient.put(`/website/media-categories/${id}`, data);
   },
   delete: async (id: string) => {
@@ -5983,18 +6450,21 @@ export const websiteAdmissionFieldsApi = {
   }) => {
     return apiClient.post('/website/admissions/fields', data);
   },
-  update: async (id: string, data: {
-    key?: string;
-    label?: string;
-    field_type?: string;
-    is_required?: boolean;
-    is_enabled?: boolean;
-    sort_order?: number;
-    placeholder?: string | null;
-    help_text?: string | null;
-    validation_rules?: Record<string, unknown> | null;
-    options?: Array<{ value: string; label: string }> | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      key?: string;
+      label?: string;
+      field_type?: string;
+      is_required?: boolean;
+      is_enabled?: boolean;
+      sort_order?: number;
+      placeholder?: string | null;
+      help_text?: string | null;
+      validation_rules?: Record<string, unknown> | null;
+      options?: Array<{ value: string; label: string }> | null;
+    },
+  ) => {
     return apiClient.put(`/website/admissions/fields/${id}`, data);
   },
   delete: async (id: string) => {
@@ -6009,7 +6479,10 @@ export const websiteAdmissionsApi = {
   get: async (id: string) => {
     return apiClient.get(`/website/admissions/${id}`);
   },
-  update: async (id: string, data: { status?: string; notes?: string | null; rejection_reason?: string | null }) => {
+  update: async (
+    id: string,
+    data: { status?: string; notes?: string | null; rejection_reason?: string | null },
+  ) => {
     return apiClient.put(`/website/admissions/${id}`, data);
   },
   accept: async (id: string, data?: { admission_no?: string; admission_year?: string }) => {
@@ -6029,12 +6502,15 @@ export const websiteDomainsApi = {
   }) => {
     return apiClient.post('/website/domains', data);
   },
-  update: async (id: string, data: {
-    domain?: string;
-    is_primary?: boolean;
-    verification_status?: string | null;
-    ssl_status?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      domain?: string;
+      is_primary?: boolean;
+      verification_status?: string | null;
+      ssl_status?: string | null;
+    },
+  ) => {
     return apiClient.put(`/website/domains/${id}`, data);
   },
   delete: async (id: string) => {
@@ -6055,20 +6531,22 @@ export const websiteMenusApi = {
   }) => {
     return apiClient.post('/website/menus', data);
   },
-  update: async (id: string, data: {
-    parent_id?: string | null;
-    label?: string;
-    url?: string;
-    sort_order?: number;
-    is_visible?: boolean;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      parent_id?: string | null;
+      label?: string;
+      url?: string;
+      sort_order?: number;
+      is_visible?: boolean;
+    },
+  ) => {
     return apiClient.put(`/website/menus/${id}`, data);
   },
   delete: async (id: string) => {
     return apiClient.delete(`/website/menus/${id}`);
   },
 };
-
 
 // Pagination Interface
 export interface PaginatedResponse<T> {
@@ -6178,7 +6656,11 @@ export const publicWebsiteApi = {
   getPublicExamOptions: async () => {
     return apiClient.get('/public/website/exams/options');
   },
-  searchPublicExamResults: async (params: { page?: number; exam_id: string; search_term: string }) => {
+  searchPublicExamResults: async (params: {
+    page?: number;
+    exam_id: string;
+    search_term: string;
+  }) => {
     return apiClient.post('/public/website/exams/results/search?page=' + (params.page || 1), {
       exam_id: params.exam_id,
       search_term: params.search_term,
@@ -6199,13 +6681,16 @@ export const websiteFatwaCategoriesApi = {
   }) => {
     return apiClient.post('/website/fatwa-categories', data);
   },
-  update: async (id: string, data: {
-    name?: string;
-    slug?: string;
-    description?: string | null;
-    is_active?: boolean;
-    sort_order?: number;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      name?: string;
+      slug?: string;
+      description?: string | null;
+      is_active?: boolean;
+      sort_order?: number;
+    },
+  ) => {
     return apiClient.put(`/website/fatwa-categories/${id}`, data);
   },
   delete: async (id: string) => {
@@ -6220,12 +6705,15 @@ export const websiteFatwaQuestionsApi = {
   get: async (id: string) => {
     return apiClient.get(`/website/fatwa-questions/${id}`);
   },
-  update: async (id: string, data: {
-    status?: string;
-    assigned_to?: string | null;
-    internal_notes?: string | null;
-    answer_draft?: string | null;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      status?: string;
+      assigned_to?: string | null;
+      internal_notes?: string | null;
+      answer_draft?: string | null;
+    },
+  ) => {
     return apiClient.put(`/website/fatwa-questions/${id}`, data);
   },
 };
@@ -6247,17 +6735,20 @@ export const websiteFatwasApi = {
   }) => {
     return apiClient.post('/website/fatwas', data);
   },
-  update: async (id: string, data: {
-    category_id?: string | null;
-    slug?: string;
-    title?: string;
-    question_text?: string | null;
-    answer_text?: string | null;
-    references_json?: any[] | null;
-    status?: string;
-    published_at?: string | null;
-    is_featured?: boolean;
-  }) => {
+  update: async (
+    id: string,
+    data: {
+      category_id?: string | null;
+      slug?: string;
+      title?: string;
+      question_text?: string | null;
+      answer_text?: string | null;
+      references_json?: any[] | null;
+      status?: string;
+      published_at?: string | null;
+      is_featured?: boolean;
+    },
+  ) => {
     return apiClient.put(`/website/fatwas/${id}`, data);
   },
   delete: async (id: string) => {

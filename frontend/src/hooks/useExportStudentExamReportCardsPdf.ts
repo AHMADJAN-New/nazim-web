@@ -89,79 +89,91 @@ export function useExportStudentExamReportCardsPdf() {
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = sanitizeBrowserDownloadFilename(
-        filename || fileName || 'student-report-card.pdf'
+        filename || fileName || 'student-report-card.pdf',
       );
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : (t('toast.reportDownloadFailed') || 'Failed to download report');
+      const msg =
+        e instanceof Error
+          ? e.message
+          : t('toast.reportDownloadFailed') || 'Failed to download report';
       setError(msg);
       showToast.error(msg);
     }
   }, [downloadUrl, reportId, fileName, t]);
 
-  const pollReportStatus = useCallback((id: string): void => {
-    setIsPolling(true);
-    setStatus('pending');
-    setProgress(0);
-    setError(null);
+  const pollReportStatus = useCallback(
+    (id: string): void => {
+      setIsPolling(true);
+      setStatus('pending');
+      setProgress(0);
+      setError(null);
 
-    const poll = async () => {
-      try {
-        pollAttemptsRef.current += 1;
-        if (pollAttemptsRef.current > 300) {
+      const poll = async () => {
+        try {
+          pollAttemptsRef.current += 1;
+          if (pollAttemptsRef.current > 300) {
+            setIsPolling(false);
+            setStatus('failed');
+            setError(t('toast.reportGenerationTimeout') || 'Report generation timed out');
+            showToast.error(t('toast.reportGenerationTimeout') || 'Report generation timed out');
+            return;
+          }
+
+          const response = await apiClient.get<{
+            success?: boolean;
+            status: ReportStatus;
+            progress: number;
+            download_url?: string | null;
+            file_name?: string | null;
+            error_message?: string | null;
+          }>(`/reports/${id}/status`);
+
+          setStatus(response.status);
+          setProgress(response.progress ?? 0);
+          setDownloadUrl(response.download_url ?? null);
+          setFileName(response.file_name ?? null);
+
+          if (response.status === 'completed') {
+            setIsPolling(false);
+            setProgress(100);
+            showToast.success(t('toast.reportDownloaded') || 'Report ready');
+            return;
+          }
+
+          if (response.status === 'failed') {
+            setIsPolling(false);
+            const msg =
+              response.error_message ||
+              t('toast.reportGenerationFailed') ||
+              'Failed to generate report';
+            setError(msg);
+            showToast.error(msg);
+            return;
+          }
+
+          pollTimeoutRef.current = setTimeout(() => {
+            void poll();
+          }, 1000);
+        } catch (e) {
           setIsPolling(false);
+          const msg =
+            e instanceof Error
+              ? e.message
+              : t('toast.reportGenerationFailed') || 'Failed to generate report';
           setStatus('failed');
-          setError(t('toast.reportGenerationTimeout') || 'Report generation timed out');
-          showToast.error(t('toast.reportGenerationTimeout') || 'Report generation timed out');
-          return;
-        }
-
-        const response = await apiClient.get<{
-          success?: boolean;
-          status: ReportStatus;
-          progress: number;
-          download_url?: string | null;
-          file_name?: string | null;
-          error_message?: string | null;
-        }>(`/reports/${id}/status`);
-
-        setStatus(response.status);
-        setProgress(response.progress ?? 0);
-        setDownloadUrl(response.download_url ?? null);
-        setFileName(response.file_name ?? null);
-
-        if (response.status === 'completed') {
-          setIsPolling(false);
-          setProgress(100);
-          showToast.success(t('toast.reportDownloaded') || 'Report ready');
-          return;
-        }
-
-        if (response.status === 'failed') {
-          setIsPolling(false);
-          const msg = response.error_message || t('toast.reportGenerationFailed') || 'Failed to generate report';
           setError(msg);
           showToast.error(msg);
-          return;
         }
+      };
 
-        pollTimeoutRef.current = setTimeout(() => {
-          void poll();
-        }, 1000);
-      } catch (e) {
-        setIsPolling(false);
-        const msg = e instanceof Error ? e.message : (t('toast.reportGenerationFailed') || 'Failed to generate report');
-        setStatus('failed');
-        setError(msg);
-        showToast.error(msg);
-      }
-    };
-
-    void poll();
-  }, [t]);
+      void poll();
+    },
+    [t],
+  );
 
   const mutation = useMutation({
     mutationFn: async ({
@@ -209,8 +221,8 @@ export function useExportStudentExamReportCardsPdf() {
     },
     onError: (err: Error) => {
       setStatus('failed');
-      const message = translateCombinedExamError(err.message, t)
-        || t('toast.reportGenerationFailed');
+      const message =
+        translateCombinedExamError(err.message, t) || t('toast.reportGenerationFailed');
       setError(message);
       showToast.error(message);
     },

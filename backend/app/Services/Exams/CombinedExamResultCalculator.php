@@ -16,10 +16,12 @@ namespace App\Services\Exams;
  * obtained mark is below it. The 40/16 and 60/24 papers (combined 100/40)
  * are an example of this rule, not fixed numbers.
  *
- * combined_obtained is set only when BOTH exams have a real mark for the
- * subject. A missing mark, an absent flag, or a subject/student that is not
- * on one of the exams leaves combined_obtained null. A one-sided number is
- * never presented as the combined score.
+ * combined_obtained adds every exam that has a real mark. A missing mark, an
+ * absent flag, or a subject the student is not enrolled in is left out of the
+ * sum, and the other exam's mark is still calculated.
+ *
+ * When an exam status is completed or archived, the caller counts a missing
+ * or absent subject as zero before combining, so that closed exam can finish.
  *
  * The subject is complete only when both marks, both totals, and both passing
  * marks are present. Then:
@@ -27,15 +29,38 @@ namespace App\Services\Exams;
  *   pass when combined_obtained >= combined_passing
  *   fail otherwise
  *
- * If any subject on the card is incomplete, the official grand total is null
- * and the overall result is Incomplete. A partial sum is not the final total.
+ * If any subject on the card is incomplete, the overall result stays
+ * Incomplete, but the total still adds every subject that has a calculated
+ * mark.
  *
- * The attendance absence penalty (a whole-exam deduction) is not applied here.
- * Only stored exam_results.marks_obtained values are summed.
+ * Attendance absence penalties are applied afterwards by
+ * CombinedExamResultCardService via applyAbsenceAdjustment(). This class only
+ * sums stored exam_results.marks_obtained values.
  */
 class CombinedExamResultCalculator
 {
-    public const FORMULA = 'combined_total = total_marks_a + total_marks_b; combined_passing = passing_marks_a + passing_marks_b; pass when combined_obtained >= combined_passing; a missing or absent mark leaves combined_obtained null';
+    public const FORMULA = 'combined_total = total_marks_a + total_marks_b; combined_passing = passing_marks_a + passing_marks_b; pass when combined_obtained >= combined_passing; a missing or absent side is skipped and the other side is still summed; on a completed exam a missing subject counts as zero';
+
+    /**
+     * A completed exam will not receive more marks. A missing or absent
+     * subject on that exam counts as zero so the result can be finished.
+     *
+     * @param  array<string, mixed>  $side
+     * @return array<string, mixed>
+     */
+    public function countMissingAsZero(array $side): array
+    {
+        if (empty($side['enrolled'])) {
+            return $side;
+        }
+
+        if (! empty($side['is_absent']) || ($side['marks_obtained'] ?? null) === null) {
+            $side['is_absent'] = false;
+            $side['marks_obtained'] = 0;
+        }
+
+        return $side;
+    }
 
     /**
      * @param  array<string, mixed>  $sideA
@@ -79,26 +104,38 @@ class CombinedExamResultCalculator
             $reasons[] = 'missing_passing_b';
         }
 
-        $combinedTotal = ($a['total_marks'] !== null && $b['total_marks'] !== null)
-            ? round($a['total_marks'] + $b['total_marks'], 2)
+        $included = array_values(array_filter(
+            [$a, $b],
+            fn (array $side): bool => $side['enrolled'] && ! $side['is_absent'] && $side['marks_obtained'] !== null
+        ));
+
+        $combinedObtained = $included === []
+            ? null
+            : round(array_sum(array_column($included, 'marks_obtained')), 2);
+        $includedTotals = array_values(array_filter(
+            array_column($included, 'total_marks'),
+            fn ($value): bool => $value !== null
+        ));
+        $includedPassing = array_values(array_filter(
+            array_column($included, 'passing_marks'),
+            fn ($value): bool => $value !== null
+        ));
+        $combinedTotal = $included !== [] && count($includedTotals) === count($included)
+            ? round(array_sum($includedTotals), 2)
             : null;
-        $combinedPassing = ($a['passing_marks'] !== null && $b['passing_marks'] !== null)
-            ? round($a['passing_marks'] + $b['passing_marks'], 2)
+        $combinedPassing = $included !== [] && count($includedPassing) === count($included)
+            ? round(array_sum($includedPassing), 2)
             : null;
 
-        $marksReady = $a['enrolled'] && $b['enrolled']
-            && ! $a['is_absent'] && ! $b['is_absent']
-            && $a['marks_obtained'] !== null && $b['marks_obtained'] !== null;
-
-        $combinedObtained = $marksReady
-            ? round($a['marks_obtained'] + $b['marks_obtained'], 2)
-            : null;
-
-        $isComplete = $marksReady && $combinedTotal !== null && $combinedPassing !== null;
+        $isComplete = $reasons === [] && $combinedObtained !== null && $combinedTotal !== null && $combinedPassing !== null;
         $isPass = null;
-        if ($isComplete && $combinedObtained !== null && $combinedPassing !== null) {
+        if ($isComplete) {
             $isPass = $combinedObtained >= $combinedPassing;
         }
+
+        $percentage = ($combinedObtained !== null && $combinedTotal !== null && $combinedTotal > 0)
+            ? round(($combinedObtained / $combinedTotal) * 100, 2)
+            : null;
 
         return [
             'exam_a' => $this->publicSide($a),
@@ -106,6 +143,7 @@ class CombinedExamResultCalculator
             'combined_obtained' => $combinedObtained,
             'combined_total' => $combinedTotal,
             'combined_passing' => $combinedPassing,
+            'percentage' => $percentage,
             'is_pass' => $isPass,
             'is_complete' => $isComplete,
             'incomplete_reasons' => $isComplete ? [] : $reasons,
@@ -113,8 +151,45 @@ class CombinedExamResultCalculator
     }
 
     /**
-     * Official grand total only when every subject is complete.
-     * Incomplete dominates Fail: a missing mark is not declared a failure.
+     * Subtract attendance marks cut from a complete combined total and
+     * recalculate the overall percentage. An incomplete card keeps its partial
+     * total; the absence figures are still attached when the penalty is on.
+     *
+     * @param  array<string, mixed>  $summary
+     * @return array<string, mixed>
+     */
+    public function applyAbsenceAdjustment(array $summary, float $marksCut, int $absenceCount, bool $enabled): array
+    {
+        if (! $enabled) {
+            return $summary;
+        }
+
+        $summary['absence_count'] = max(0, $absenceCount);
+        $summary['marks_cut'] = round(max(0, $marksCut), 2);
+
+        if (empty($summary['is_complete']) || $summary['combined_obtained'] === null || $summary['combined_total'] === null) {
+            return $summary;
+        }
+
+        $raw = round((float) $summary['combined_obtained'], 2);
+        $cut = min($summary['marks_cut'], $raw);
+        $adjusted = round($raw - $cut, 2);
+        $maximum = (float) $summary['combined_total'];
+
+        $summary['combined_obtained_raw'] = $raw;
+        $summary['marks_cut'] = $cut;
+        $summary['combined_obtained'] = $adjusted;
+        $summary['overall_percentage'] = $maximum > 0
+            ? round(($adjusted / $maximum) * 100, 2)
+            : null;
+
+        return $summary;
+    }
+
+    /**
+     * Adds every subject that has a calculated mark. A missing subject does
+     * not erase the others. The result stays Incomplete until every subject
+     * is complete, and Incomplete is not reported as a failure.
      *
      * @param  list<array<string, mixed>>  $subjects
      * @return array<string, mixed>
@@ -127,18 +202,25 @@ class CombinedExamResultCalculator
         $obtained = 0.0;
         $maximum = 0.0;
         $passing = 0.0;
+        $scored = 0;
         $allComplete = $subjects !== [];
 
         foreach ($subjects as $subject) {
+            if (($subject['combined_obtained'] ?? null) !== null && ($subject['combined_total'] ?? null) !== null) {
+                $scored++;
+                $obtained += (float) $subject['combined_obtained'];
+                $maximum += (float) $subject['combined_total'];
+                if (($subject['combined_passing'] ?? null) !== null) {
+                    $passing += (float) $subject['combined_passing'];
+                }
+            }
+
             if (! empty($subject['is_complete'])) {
                 if (($subject['is_pass'] ?? null) === true) {
                     $passed++;
                 } elseif (($subject['is_pass'] ?? null) === false) {
                     $failed++;
                 }
-                $obtained += (float) $subject['combined_obtained'];
-                $maximum += (float) $subject['combined_total'];
-                $passing += (float) $subject['combined_passing'];
             } else {
                 $incomplete++;
                 $allComplete = false;
@@ -146,15 +228,17 @@ class CombinedExamResultCalculator
         }
 
         if (! $allComplete) {
+            $partialPercentage = $maximum > 0 ? round(($obtained / $maximum) * 100, 2) : null;
+
             return [
                 'total_subjects' => count($subjects),
                 'passed_subjects' => $passed,
                 'failed_subjects' => $failed,
                 'incomplete_subjects' => $incomplete,
-                'combined_obtained' => null,
-                'combined_total' => null,
-                'combined_passing' => null,
-                'overall_percentage' => null,
+                'combined_obtained' => $scored > 0 ? round($obtained, 2) : null,
+                'combined_total' => $scored > 0 ? round($maximum, 2) : null,
+                'combined_passing' => $scored > 0 ? round($passing, 2) : null,
+                'overall_percentage' => $scored > 0 ? $partialPercentage : null,
                 'overall_result' => 'Incomplete',
                 'is_complete' => false,
             ];

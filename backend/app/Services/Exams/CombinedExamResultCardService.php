@@ -2,6 +2,7 @@
 
 namespace App\Services\Exams;
 
+use App\Helpers\GradeCalculator;
 use App\Models\Exam;
 use App\Models\ExamClass;
 use App\Models\ExamResult;
@@ -22,6 +23,7 @@ class CombinedExamResultCardService
 {
     public function __construct(
         private CombinedExamResultCalculator $calculator,
+        private AbsenceMarkPenaltyCalculator $absenceMarkPenaltyCalculator,
         private DateConversionService $dateConversionService,
         private FileStorageService $fileStorageService,
     ) {}
@@ -85,6 +87,22 @@ class CombinedExamResultCardService
         $organizationName = Organization::query()->whereKey($organizationId)->value('name');
         $examPayloadA = $this->examPayload($examA, $language, $calendarPreference);
         $examPayloadB = $this->examPayload($examB, $language, $calendarPreference);
+        $admissionIdList = $admissionIds->all();
+        $penaltyContextA = $this->absenceMarkPenaltyCalculator->loadContext(
+            $organizationId,
+            $schoolId,
+            (string) $examA->id,
+            (string) $classA->id,
+            $admissionIdList,
+        );
+        $penaltyContextB = $this->absenceMarkPenaltyCalculator->loadContext(
+            $organizationId,
+            $schoolId,
+            (string) $examB->id,
+            (string) $classB->id,
+            $admissionIdList,
+        );
+        $gradeCache = [];
 
         $cards = [];
         foreach ($examStudentsA as $examStudentA) {
@@ -99,8 +117,8 @@ class CombinedExamResultCardService
                 $resultB = ($subjectB && $examStudentB) ? ($resultsB[$examStudentB->id][$subjectB->id] ?? null) : null;
 
                 $combined = $this->calculator->combineSubject(
-                    $this->side($subjectA, $resultA, studentEnrolled: true),
-                    $this->side($subjectB, $resultB, studentEnrolled: $enrolledInB),
+                    $this->sideForExam($examA, $this->side($subjectA, $resultA, studentEnrolled: true)),
+                    $this->sideForExam($examB, $this->side($subjectB, $resultB, studentEnrolled: $enrolledInB)),
                 );
 
                 $source = $subjectA ?? $subjectB;
@@ -109,8 +127,70 @@ class CombinedExamResultCardService
                     'subject_id' => $source?->subject_id,
                     'subject_name' => $this->subjectName($source),
                     'subject_code' => $source?->subject?->code,
+                    'grade_name' => $this->cachedGradeName(
+                        isset($combined['percentage']) && is_numeric($combined['percentage'])
+                            ? (float) $combined['percentage']
+                            : null,
+                        $organizationId,
+                        $language,
+                        $gradeCache,
+                    ),
                 ]);
             }
+
+            [$rawA, $maxA] = $this->examSideTotals($subjectRows, 'exam_a');
+            [$rawB, $maxB] = $this->examSideTotals($subjectRows, 'exam_b');
+            $admissionId = $examStudentA->student_admission_id
+                ? (string) $examStudentA->student_admission_id
+                : null;
+            $penaltyA = $this->absenceMarkPenaltyCalculator->applyForAdmission(
+                organizationId: $organizationId,
+                schoolId: $schoolId,
+                examId: (string) $examA->id,
+                examClassId: (string) $classA->id,
+                studentAdmissionId: $admissionId,
+                rawTotal: $rawA,
+                totalMaximum: $maxA,
+                context: $penaltyContextA,
+            );
+            $penaltyB = [
+                'enabled' => false,
+                'absence_count' => 0,
+                'marks_cut' => 0.0,
+            ];
+            if ($enrolledInB) {
+                $penaltyB = $this->absenceMarkPenaltyCalculator->applyForAdmission(
+                    organizationId: $organizationId,
+                    schoolId: $schoolId,
+                    examId: (string) $examB->id,
+                    examClassId: (string) $classB->id,
+                    studentAdmissionId: $admissionId,
+                    rawTotal: $rawB,
+                    totalMaximum: $maxB,
+                    context: $penaltyContextB,
+                );
+            }
+            $penaltyEnabled = ($penaltyA['enabled'] ?? false) || ($penaltyB['enabled'] ?? false);
+            $marksCut = ($penaltyA['enabled'] ? (float) $penaltyA['marks_cut'] : 0.0)
+                + ($penaltyB['enabled'] ? (float) $penaltyB['marks_cut'] : 0.0);
+            $absenceCount = ($penaltyA['enabled'] ? (int) $penaltyA['absence_count'] : 0)
+                + ($penaltyB['enabled'] ? (int) $penaltyB['absence_count'] : 0);
+            $summary = $this->calculator->applyAbsenceAdjustment(
+                $this->calculator->summarize($subjectRows),
+                $marksCut,
+                $absenceCount,
+                $penaltyEnabled,
+            );
+            $summary['overall_grade'] = ! empty($summary['is_complete'])
+                ? $this->cachedGradeName(
+                    isset($summary['overall_percentage']) && is_numeric($summary['overall_percentage'])
+                        ? (float) $summary['overall_percentage']
+                        : null,
+                    $organizationId,
+                    $language,
+                    $gradeCache,
+                )
+                : null;
 
             $studentModel = $examStudentA->studentAdmission?->student;
             $picturePath = $studentModel?->picture_path;
@@ -142,7 +222,7 @@ class CombinedExamResultCardService
                         : null,
                 ],
                 'subjects' => $subjectRows,
-                'summary' => $this->calculator->summarize($subjectRows),
+                'summary' => $summary,
             ];
         }
 
@@ -262,6 +342,48 @@ class CombinedExamResultCardService
         return 'es:'.$subject->id;
     }
 
+    /**
+     * @param  list<array<string, mixed>>  $subjectRows
+     * @return array{0: float, 1: float}
+     */
+    private function examSideTotals(array $subjectRows, string $side): array
+    {
+        $raw = 0.0;
+        $maximum = 0.0;
+
+        foreach ($subjectRows as $row) {
+            $cell = $row[$side] ?? [];
+            if (empty($cell['enrolled'])) {
+                continue;
+            }
+            if (empty($cell['is_absent']) && ($cell['marks_obtained'] ?? null) !== null) {
+                $raw += (float) $cell['marks_obtained'];
+            }
+            if (($cell['total_marks'] ?? null) !== null) {
+                $maximum += (float) $cell['total_marks'];
+            }
+        }
+
+        return [round($raw, 2), round($maximum, 2)];
+    }
+
+    /**
+     * @param  array<string, string|null>  $cache
+     */
+    private function cachedGradeName(?float $percentage, string $organizationId, string $language, array &$cache): ?string
+    {
+        if ($percentage === null) {
+            return null;
+        }
+
+        $key = number_format($percentage, 2, '.', '');
+        if (! array_key_exists($key, $cache)) {
+            $cache[$key] = GradeCalculator::getGradeName($percentage, $organizationId, $language);
+        }
+
+        return $cache[$key];
+    }
+
     private function subjectName(?ExamSubject $subject): string
     {
         if ($subject === null) {
@@ -302,6 +424,19 @@ class CombinedExamResultCardService
     /**
      * @return array<string, mixed>
      */
+    /**
+     * @param  array<string, mixed>  $side
+     * @return array<string, mixed>
+     */
+    private function sideForExam(Exam $exam, array $side): array
+    {
+        if (! in_array($exam->status, [Exam::STATUS_COMPLETED, Exam::STATUS_ARCHIVED], true)) {
+            return $side;
+        }
+
+        return $this->calculator->countMissingAsZero($side);
+    }
+
     private function side(?ExamSubject $examSubject, ?ExamResult $result, bool $studentEnrolled): array
     {
         if ($examSubject === null || ! $studentEnrolled) {

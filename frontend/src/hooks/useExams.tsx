@@ -7,8 +7,13 @@ import { useAuth } from './useAuth';
 import { useLanguage } from './useLanguage';
 
 import {
-  examsApi, examClassesApi, examSubjectsApi, examTimesApi,
-  examStudentsApi, examResultsApi, examAttendanceApi
+  examsApi,
+  examClassesApi,
+  examSubjectsApi,
+  examTimesApi,
+  examStudentsApi,
+  examResultsApi,
+  examAttendanceApi,
 } from '@/lib/api/client';
 import { showToast } from '@/lib/toast';
 import {
@@ -35,12 +40,24 @@ import {
 } from '@/mappers/examMapper';
 import type * as ExamApi from '@/types/api/exam';
 import type {
-  Exam, ExamClass, ExamSubject, ExamReport, ExamTime,
-  ExamSummaryReport, ClassMarkSheetReport, StudentResultReport,
-  EnrollmentStats, MarksProgress, ExamStatus, ExamAttendance,
-  ExamAttendanceSummary, TimeslotStudentsResponse, StudentAttendanceReport,
+  Exam,
+  ExamClass,
+  ExamSubject,
+  ExamReport,
+  ExamTime,
+  ExamSummaryReport,
+  ClassMarkSheetReport,
+  StudentResultReport,
+  EnrollmentStats,
+  MarksProgress,
+  ExamStatus,
+  ExamAttendance,
+  ExamAttendanceSummary,
+  TimeslotStudentsResponse,
+  StudentAttendanceReport,
   ExamAttendanceReportDetail,
-  TimeslotAttendanceSummary, ExamAttendanceStatus
+  TimeslotAttendanceSummary,
+  ExamAttendanceStatus,
 } from '@/types/domain/exam';
 
 // ========== Exam CRUD Hooks ==========
@@ -50,7 +67,12 @@ export const useExams = (organizationId?: string) => {
   const { orgIds, isLoading: orgsLoading } = useAccessibleOrganizations();
 
   return useQuery<Exam[]>({
-    queryKey: ['exams', organizationId || profile?.organization_id, orgIds.join(','), profile?.default_school_id ?? null],
+    queryKey: [
+      'exams',
+      organizationId || profile?.organization_id,
+      orgIds.join(','),
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || orgsLoading) return [];
       try {
@@ -87,15 +109,23 @@ export const useLatestExamFromCurrentYear = (organizationId?: string) => {
 
     // Filter exams for current academic year
     const currentYearExams = exams.filter(
-      exam => exam.academicYear?.id === currentAcademicYear.id
+      (exam) => exam.academicYear?.id === currentAcademicYear.id,
     );
 
     if (currentYearExams.length === 0) return null;
 
     // Sort by start date (most recent first), then by created date
     const sorted = [...currentYearExams].sort((a, b) => {
-      const aDate = a.startDate ? new Date(a.startDate).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-      const bDate = b.startDate ? new Date(b.startDate).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      const aDate = a.startDate
+        ? new Date(a.startDate).getTime()
+        : a.createdAt
+          ? new Date(a.createdAt).getTime()
+          : 0;
+      const bDate = b.startDate
+        ? new Date(b.startDate).getTime()
+        : b.createdAt
+          ? new Date(b.createdAt).getTime()
+          : 0;
       return bDate - aDate; // Most recent first
     });
 
@@ -181,7 +211,9 @@ export const useUpdateExamStatus = () => {
       void queryClient.invalidateQueries({ queryKey: ['exam'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.examStatusUpdateFailed') || 'Failed to update exam status');
+      showToast.error(
+        error?.message || t('toast.examStatusUpdateFailed') || 'Failed to update exam status',
+      );
     },
   });
 };
@@ -208,7 +240,12 @@ export const useExamClasses = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamClass[]>({
-    queryKey: ['exam-classes', examId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'exam-classes',
+      examId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const apiExamClasses = await examClassesApi.list({ exam_id: examId });
@@ -260,7 +297,13 @@ export const useExamSubjects = (examId?: string, examClassId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamSubject[]>({
-    queryKey: ['exam-subjects', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'exam-subjects',
+      examId,
+      examClassId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const params: { exam_id: string; exam_class_id?: string } = { exam_id: examId };
@@ -295,7 +338,9 @@ export const useEnrollSubjectToExam = () => {
       void queryClient.invalidateQueries({ queryKey: ['exam-subjects', result.exam_id] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.subjectEnrollFailed') || 'Failed to enroll subject');
+      showToast.error(
+        error?.message || t('toast.subjectEnrollFailed') || 'Failed to enroll subject',
+      );
     },
   });
 };
@@ -310,7 +355,9 @@ export const useRemoveExamSubject = () => {
       await queryClient.invalidateQueries({ queryKey: ['exam-subjects'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.subjectRemoveFailed') || 'Failed to remove subject');
+      showToast.error(
+        error?.message || t('toast.subjectRemoveFailed') || 'Failed to remove subject',
+      );
     },
   });
 };
@@ -324,14 +371,20 @@ export const useUpdateExamSubject = () => {
       data,
     }: {
       id: string;
-      data: { total_marks?: number | null; passing_marks?: number | null; scheduled_at?: string | null };
+      data: {
+        total_marks?: number | null;
+        passing_marks?: number | null;
+        scheduled_at?: string | null;
+      };
     }) => examSubjectsApi.update(id, data),
     onSuccess: () => {
       showToast.success(t('toast.examSubjectUpdated') || 'Exam subject updated');
       void queryClient.invalidateQueries({ queryKey: ['exam-subjects'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.examSubjectUpdateFailed') || 'Failed to update subject');
+      showToast.error(
+        error?.message || t('toast.examSubjectUpdateFailed') || 'Failed to update subject',
+      );
     },
   });
 };
@@ -350,13 +403,15 @@ export const useBulkAssignAllExamSubjects = () => {
       const skipped = result?.skipped_count ?? 0;
       showToast.success(
         t('exams.bulkAssignSubjectsSuccess', { count: assigned, skipped }) ||
-          `Assigned ${assigned} subject(s). ${skipped} already assigned.`
+          `Assigned ${assigned} subject(s). ${skipped} already assigned.`,
       );
       await queryClient.invalidateQueries({ queryKey: ['exam-subjects', variables.exam_id] });
       await queryClient.refetchQueries({ queryKey: ['exam-subjects', variables.exam_id] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('exams.bulkAssignSubjectsFailed') || 'Failed to bulk assign subjects');
+      showToast.error(
+        error?.message || t('exams.bulkAssignSubjectsFailed') || 'Failed to bulk assign subjects',
+      );
     },
   });
 };
@@ -375,13 +430,15 @@ export const useBulkUpdateExamSubjectMarks = () => {
       const updated = result?.updated_count ?? 0;
       showToast.success(
         t('exams.bulkUpdateMarksSuccess', { count: updated }) ||
-          `Updated marks for ${updated} subject(s).`
+          `Updated marks for ${updated} subject(s).`,
       );
       await queryClient.invalidateQueries({ queryKey: ['exam-subjects', variables.exam_id] });
       await queryClient.refetchQueries({ queryKey: ['exam-subjects', variables.exam_id] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('exams.bulkUpdateMarksFailed') || 'Failed to bulk update marks');
+      showToast.error(
+        error?.message || t('exams.bulkUpdateMarksFailed') || 'Failed to bulk update marks',
+      );
     },
   });
 };
@@ -392,7 +449,13 @@ export const useExamTimes = (examId?: string, examClassId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamTime[]>({
-    queryKey: ['exam-times', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'exam-times',
+      examId,
+      examClassId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const params: { exam_class_id?: string } = {};
@@ -413,7 +476,13 @@ export const useCreateExamTime = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   return useMutation({
-    mutationFn: ({ examId, data }: { examId: string; data: Partial<ExamTime> & { classSubjectId?: string } }) => {
+    mutationFn: ({
+      examId,
+      data,
+    }: {
+      examId: string;
+      data: Partial<ExamTime> & { classSubjectId?: string };
+    }) => {
       const insertData = mapExamTimeDomainToInsert(data);
       return examTimesApi.create(examId, insertData);
     },
@@ -423,7 +492,9 @@ export const useCreateExamTime = () => {
       void queryClient.invalidateQueries({ queryKey: ['exam-report'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.examTimeCreateFailed') || 'Failed to create time slot');
+      showToast.error(
+        error?.message || t('toast.examTimeCreateFailed') || 'Failed to create time slot',
+      );
     },
   });
 };
@@ -432,7 +503,13 @@ export const useUpdateExamTime = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<ExamTime> & { syncSlot?: boolean; classSubjectId?: string } }) => {
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<ExamTime> & { syncSlot?: boolean; classSubjectId?: string };
+    }) => {
       const updateData = mapExamTimeDomainToUpdate(data);
       return examTimesApi.update(id, updateData);
     },
@@ -442,7 +519,9 @@ export const useUpdateExamTime = () => {
       void queryClient.invalidateQueries({ queryKey: ['exam-report'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.examTimeUpdateFailed') || 'Failed to update time slot');
+      showToast.error(
+        error?.message || t('toast.examTimeUpdateFailed') || 'Failed to update time slot',
+      );
     },
   });
 };
@@ -474,7 +553,9 @@ export const useDeleteExamTime = () => {
       await queryClient.invalidateQueries({ queryKey: ['exam-report'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.examTimeDeleteFailed') || 'Failed to delete time slot');
+      showToast.error(
+        error?.message || t('toast.examTimeDeleteFailed') || 'Failed to delete time slot',
+      );
     },
   });
 };
@@ -489,7 +570,9 @@ export const useToggleExamTimeLock = () => {
       void queryClient.invalidateQueries({ queryKey: ['exam-times'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.examTimeLockToggleFailed') || 'Failed to toggle lock');
+      showToast.error(
+        error?.message || t('toast.examTimeLockToggleFailed') || 'Failed to toggle lock',
+      );
     },
   });
 };
@@ -537,7 +620,9 @@ export const useBulkReplaceExamTimes = () => {
       await queryClient.invalidateQueries({ queryKey: ['exam-report'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.examTimetableApplyFailed') || 'Failed to apply exam timetable');
+      showToast.error(
+        error?.message || t('toast.examTimetableApplyFailed') || 'Failed to apply exam timetable',
+      );
     },
   });
 };
@@ -565,7 +650,12 @@ export const useExamSummaryReport = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamSummaryReport>({
-    queryKey: ['exam-summary-report', examId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'exam-summary-report',
+      examId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId) throw new Error('Missing exam');
       const report = await examsApi.summaryReport(examId);
@@ -582,7 +672,13 @@ export const useExamClassReport = (examId?: string, classId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ClassMarkSheetReport>({
-    queryKey: ['exam-class-report', examId, classId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'exam-class-report',
+      examId,
+      classId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId || !classId) throw new Error('Missing exam or class');
       const report = await examsApi.classReport(examId, classId);
@@ -597,12 +693,20 @@ export const useExamClassReport = (examId?: string, classId?: string) => {
 
 export const useExamStudentReport = (examId?: string, studentId?: string) => {
   const { user, profile } = useAuth();
+  const { language } = useLanguage();
 
   return useQuery<StudentResultReport>({
-    queryKey: ['exam-student-report', examId, studentId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'exam-student-report',
+      examId,
+      studentId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+      language,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId || !studentId) throw new Error('Missing exam or student');
-      const report = await examsApi.studentReport(examId, studentId);
+      const report = await examsApi.studentReport(examId, studentId, language);
       return mapStudentResultApiToDomain(report as ExamApi.StudentResultReport);
     },
     enabled: !!user && !!profile && !!examId && !!studentId,
@@ -616,7 +720,12 @@ export const useEnrollmentStats = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<EnrollmentStats>({
-    queryKey: ['enrollment-stats', examId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'enrollment-stats',
+      examId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId) throw new Error('Missing exam');
       const stats = await examsApi.enrollmentStats(examId);
@@ -633,7 +742,12 @@ export const useMarksProgress = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<MarksProgress>({
-    queryKey: ['marks-progress', examId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'marks-progress',
+      examId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId) throw new Error('Missing exam');
       const progress = await examsApi.marksProgress(examId);
@@ -652,7 +766,13 @@ export const useExamStudents = (examId?: string, examClassId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery({
-    queryKey: ['exam-students', examId, examClassId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'exam-students',
+      examId,
+      examClassId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile) return [];
       const params: { exam_id?: string; exam_class_id?: string } = {};
@@ -673,7 +793,11 @@ export const useEnrollStudent = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   return useMutation({
-    mutationFn: async (data: { exam_id: string; exam_class_id: string; student_admission_id: string }) => {
+    mutationFn: async (data: {
+      exam_id: string;
+      exam_class_id: string;
+      student_admission_id: string;
+    }) => {
       return examStudentsApi.create(data);
     },
     onSuccess: () => {
@@ -682,7 +806,9 @@ export const useEnrollStudent = () => {
       void queryClient.invalidateQueries({ queryKey: ['enrollment-stats'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.studentEnrollFailed') || 'Failed to enroll student');
+      showToast.error(
+        error?.message || t('toast.studentEnrollFailed') || 'Failed to enroll student',
+      );
     },
   });
 };
@@ -698,16 +824,22 @@ export const useBulkEnrollStudents = () => {
       const result = data as { enrolled_count?: number; skipped_count?: number };
       const enrolledCount = result?.enrolled_count || 0;
       const skippedCount = result?.skipped_count || 0;
-      const message = skippedCount > 0
-        ? t('toast.studentsEnrolledWithSkipped', { enrolled: enrolledCount, skipped: skippedCount }) ||
-        `${enrolledCount} students enrolled. ${skippedCount} already enrolled.`
-        : t('toast.studentsEnrolled', { count: enrolledCount }) || `${enrolledCount} students enrolled.`;
+      const message =
+        skippedCount > 0
+          ? t('toast.studentsEnrolledWithSkipped', {
+              enrolled: enrolledCount,
+              skipped: skippedCount,
+            }) || `${enrolledCount} students enrolled. ${skippedCount} already enrolled.`
+          : t('toast.studentsEnrolled', { count: enrolledCount }) ||
+            `${enrolledCount} students enrolled.`;
       showToast.success(message);
       void queryClient.invalidateQueries({ queryKey: ['exam-students'] });
       void queryClient.invalidateQueries({ queryKey: ['enrollment-stats'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.studentsEnrollFailed') || 'Failed to enroll students');
+      showToast.error(
+        error?.message || t('toast.studentsEnrollFailed') || 'Failed to enroll students',
+      );
     },
   });
 };
@@ -725,13 +857,15 @@ export const useEnrollAllStudents = () => {
       const skipped = result?.summary?.total_skipped || 0;
       showToast.success(
         t('toast.allStudentsEnrolled', { enrolled, skipped }) ||
-        `Enrolled ${enrolled} students across all classes. ${skipped} already enrolled.`
+          `Enrolled ${enrolled} students across all classes. ${skipped} already enrolled.`,
       );
       void queryClient.invalidateQueries({ queryKey: ['exam-students'] });
       void queryClient.invalidateQueries({ queryKey: ['enrollment-stats'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.enrollAllFailed') || 'Failed to enroll all students');
+      showToast.error(
+        error?.message || t('toast.enrollAllFailed') || 'Failed to enroll all students',
+      );
     },
   });
 };
@@ -749,7 +883,9 @@ export const useRemoveStudentFromExam = () => {
       await queryClient.invalidateQueries({ queryKey: ['enrollment-stats'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.studentRemoveFailed') || 'Failed to remove student');
+      showToast.error(
+        error?.message || t('toast.studentRemoveFailed') || 'Failed to remove student',
+      );
     },
   });
 };
@@ -762,7 +898,14 @@ export const useExamResults = (examId?: string, examSubjectId?: string, examStud
   const hasScopedFilter = !!examSubjectId || !!examStudentId;
 
   return useQuery({
-    queryKey: ['exam-results', examId, examSubjectId, examStudentId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'exam-results',
+      examId,
+      examSubjectId,
+      examStudentId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !hasScopedFilter) return [];
       const params: { exam_id?: string; exam_subject_id?: string; exam_student_id?: string } = {};
@@ -826,12 +969,16 @@ export const useBulkSaveExamResults = () => {
       const createdCount = result?.created_count || 0;
       const updatedCount = result?.updated_count || 0;
       const total = createdCount + updatedCount;
-      showToast.success(t('toast.examResultsSaved', { count: total }) || `${total} results saved successfully`);
+      showToast.success(
+        t('toast.examResultsSaved', { count: total }) || `${total} results saved successfully`,
+      );
       void queryClient.invalidateQueries({ queryKey: ['exam-results'] });
       void queryClient.invalidateQueries({ queryKey: ['marks-progress'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.examResultsSaveFailed') || 'Failed to save results');
+      showToast.error(
+        error?.message || t('toast.examResultsSaveFailed') || 'Failed to save results',
+      );
     },
   });
 };
@@ -855,7 +1002,9 @@ export const useUpdateExamResult = () => {
       void queryClient.invalidateQueries({ queryKey: ['marks-progress'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.examResultUpdateFailed') || 'Failed to update result');
+      showToast.error(
+        error?.message || t('toast.examResultUpdateFailed') || 'Failed to update result',
+      );
     },
   });
 };
@@ -873,7 +1022,9 @@ export const useDeleteExamResult = () => {
       await queryClient.invalidateQueries({ queryKey: ['marks-progress'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.examResultDeleteFailed') || 'Failed to delete result');
+      showToast.error(
+        error?.message || t('toast.examResultDeleteFailed') || 'Failed to delete result',
+      );
     },
   });
 };
@@ -888,12 +1039,18 @@ export const useExamAttendance = (
     examSubjectId?: string;
     status?: ExamAttendanceStatus;
     date?: string;
-  }
+  },
 ) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamAttendance[]>({
-    queryKey: ['exam-attendance', examId, filters, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'exam-attendance',
+      examId,
+      filters,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const params: Record<string, string | undefined> = {};
@@ -916,7 +1073,12 @@ export const useExamAttendanceSummary = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamAttendanceSummary | null>({
-    queryKey: ['exam-attendance-summary', examId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'exam-attendance-summary',
+      examId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId) return null;
       const apiSummary = await examAttendanceApi.summary(examId);
@@ -931,7 +1093,7 @@ export const useExamAttendanceSummary = (examId?: string) => {
 export const useExamAttendanceReportDetail = (
   examId?: string,
   examClassId?: string | null,
-  examSubjectId?: string | null
+  examSubjectId?: string | null,
 ) => {
   const { user, profile } = useAuth();
 
@@ -950,7 +1112,9 @@ export const useExamAttendanceReportDetail = (
         exam_class_id: examClassId,
         exam_subject_id: examSubjectId,
       });
-      return mapExamAttendanceReportDetailApiToDomain(apiDetail as ExamApi.ExamAttendanceReportDetail);
+      return mapExamAttendanceReportDetailApiToDomain(
+        apiDetail as ExamApi.ExamAttendanceReportDetail,
+      );
     },
     enabled: !!user && !!profile && !!examId && !!examClassId && !!examSubjectId,
     staleTime: 2 * 60 * 1000,
@@ -962,11 +1126,19 @@ export const useTimeslotStudents = (examId?: string, examTimeId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<TimeslotStudentsResponse | null>({
-    queryKey: ['timeslot-students', examId, examTimeId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'timeslot-students',
+      examId,
+      examTimeId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId || !examTimeId) return null;
       const apiResponse = await examAttendanceApi.getTimeslotStudents(examId, examTimeId);
-      return mapTimeslotStudentsResponseApiToDomain(apiResponse as ExamApi.TimeslotStudentsResponse);
+      return mapTimeslotStudentsResponseApiToDomain(
+        apiResponse as ExamApi.TimeslotStudentsResponse,
+      );
     },
     enabled: !!user && !!profile && !!examId && !!examTimeId,
     staleTime: 1 * 60 * 1000,
@@ -978,11 +1150,19 @@ export const useTimeslotAttendanceSummary = (examId?: string, examTimeId?: strin
   const { user, profile } = useAuth();
 
   return useQuery<TimeslotAttendanceSummary | null>({
-    queryKey: ['timeslot-attendance-summary', examId, examTimeId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'timeslot-attendance-summary',
+      examId,
+      examTimeId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId || !examTimeId) return null;
       const apiSummary = await examAttendanceApi.timeslotSummary(examId, examTimeId);
-      return mapTimeslotAttendanceSummaryApiToDomain(apiSummary as ExamApi.TimeslotAttendanceSummary);
+      return mapTimeslotAttendanceSummaryApiToDomain(
+        apiSummary as ExamApi.TimeslotAttendanceSummary,
+      );
     },
     enabled: !!user && !!profile && !!examId && !!examTimeId,
     staleTime: 1 * 60 * 1000,
@@ -994,7 +1174,13 @@ export const useStudentAttendanceReport = (examId?: string, studentId?: string) 
   const { user, profile } = useAuth();
 
   return useQuery<StudentAttendanceReport | null>({
-    queryKey: ['student-attendance-report', examId, studentId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'student-attendance-report',
+      examId,
+      studentId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId || !studentId) return null;
       const apiReport = await examAttendanceApi.studentReport(examId, studentId);
@@ -1152,13 +1338,18 @@ export const useHallAttendanceSessions = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<HallAttendanceSession[]>({
-    queryKey: ['exam-hall-attendance-sessions', examId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'exam-hall-attendance-sessions',
+      examId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const response = await examAttendanceApi.hallSessions(examId);
       const rows = Array.isArray(response)
         ? response
-        : (response as { data?: Array<Record<string, unknown>> })?.data ?? [];
+        : ((response as { data?: Array<Record<string, unknown>> })?.data ?? []);
       return rows.map((raw) =>
         mapHallSessionApi(
           raw as {
@@ -1167,11 +1358,12 @@ export const useHallAttendanceSessions = (examId?: string) => {
             end_time?: string | null;
             exam_time_ids?: string[];
             class_count?: number;
-          }
-        )
+          },
+        ),
       );
     },
-    enabled: !!user && !!profile && !!profile.organization_id && !!profile.default_school_id && !!examId,
+    enabled:
+      !!user && !!profile && !!profile.organization_id && !!profile.default_school_id && !!examId,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
@@ -1181,13 +1373,18 @@ export const useHallAttendanceMaps = (examId?: string) => {
   const { user, profile } = useAuth();
 
   return useQuery<HallAttendanceMapOption[]>({
-    queryKey: ['exam-hall-attendance-maps', examId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'exam-hall-attendance-maps',
+      examId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId) return [];
       const response = await examAttendanceApi.hallMaps(examId);
       const rows = Array.isArray(response)
         ? response
-        : (response as { data?: Array<Record<string, unknown>> })?.data ?? [];
+        : ((response as { data?: Array<Record<string, unknown>> })?.data ?? []);
       return rows.map((raw) => {
         const r = raw as {
           id: string;
@@ -1219,7 +1416,8 @@ export const useHallAttendanceMaps = (examId?: string) => {
         };
       });
     },
-    enabled: !!user && !!profile && !!profile.organization_id && !!profile.default_school_id && !!examId,
+    enabled:
+      !!user && !!profile && !!profile.organization_id && !!profile.default_school_id && !!examId,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
@@ -1269,7 +1467,7 @@ function mapHallStudentsResponse(response: unknown): HallAttendanceStudentsRespo
 export const useHallAttendanceStudents = (
   examId?: string,
   mapId?: string | null,
-  session?: { date: string; startTime: string } | null
+  session?: { date: string; startTime: string } | null,
 ) => {
   const { user, profile } = useAuth();
   const useMap = !!mapId;
@@ -1351,7 +1549,10 @@ export const useMarkExamAttendance = () => {
       const result = data.result as { created?: number; updated?: number; errors?: unknown[] };
       const total = (result?.created || 0) + (result?.updated || 0);
       if (!data.silent) {
-        showToast.success(t('toast.attendanceMarked', { count: total }) || `Attendance marked for ${total} students`);
+        showToast.success(
+          t('toast.attendanceMarked', { count: total }) ||
+            `Attendance marked for ${total} students`,
+        );
       }
       void queryClient.invalidateQueries({ queryKey: ['exam-attendance'] });
       void queryClient.invalidateQueries({ queryKey: ['timeslot-students'] });
@@ -1360,7 +1561,9 @@ export const useMarkExamAttendance = () => {
       void queryClient.invalidateQueries({ queryKey: ['exam-hall-attendance-students'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.attendanceMarkFailed') || 'Failed to mark attendance');
+      showToast.error(
+        error?.message || t('toast.attendanceMarkFailed') || 'Failed to mark attendance',
+      );
     },
   });
 };
@@ -1402,7 +1605,10 @@ export const useMarkHallExamAttendance = () => {
       const result = data.result as { created?: number; updated?: number; errors?: unknown[] };
       const total = (result?.created || 0) + (result?.updated || 0);
       if (!data.silent) {
-        showToast.success(t('toast.attendanceMarked', { count: total }) || `Attendance marked for ${total} students`);
+        showToast.success(
+          t('toast.attendanceMarked', { count: total }) ||
+            `Attendance marked for ${total} students`,
+        );
       }
       // Silent hall taps: skip refetching the large seating payload (causes Opera OOM with ~1000 students).
       // Local optimistic state already reflects marks; full sync happens on Finish / non-silent save.
@@ -1415,7 +1621,9 @@ export const useMarkHallExamAttendance = () => {
       }
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.attendanceMarkFailed') || 'Failed to mark attendance');
+      showToast.error(
+        error?.message || t('toast.attendanceMarkFailed') || 'Failed to mark attendance',
+      );
     },
   });
 };
@@ -1462,11 +1670,21 @@ export const useScanExamAttendance = () => {
   });
 };
 
-export const useExamAttendanceScanFeed = (examId?: string, examTimeId?: string, limit: number = 30) => {
+export const useExamAttendanceScanFeed = (
+  examId?: string,
+  examTimeId?: string,
+  limit: number = 30,
+) => {
   const { user, profile } = useAuth();
 
   return useQuery<ExamAttendance[]>({
-    queryKey: ['exam-attendance-scan-feed', examId, examTimeId, profile?.organization_id, profile?.default_school_id ?? null],
+    queryKey: [
+      'exam-attendance-scan-feed',
+      examId,
+      examTimeId,
+      profile?.organization_id,
+      profile?.default_school_id ?? null,
+    ],
     queryFn: async () => {
       if (!user || !profile || !examId || !examTimeId) return [];
       const scans = await examAttendanceApi.scanFeed(examId, examTimeId, { limit });
@@ -1510,7 +1728,9 @@ export const useUpdateExamAttendance = () => {
       void queryClient.invalidateQueries({ queryKey: ['exam-attendance-summary'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.attendanceUpdateFailed') || 'Failed to update attendance');
+      showToast.error(
+        error?.message || t('toast.attendanceUpdateFailed') || 'Failed to update attendance',
+      );
     },
   });
 };
@@ -1530,7 +1750,9 @@ export const useDeleteExamAttendance = () => {
       await queryClient.invalidateQueries({ queryKey: ['exam-attendance-summary'] });
     },
     onError: (error: Error) => {
-      showToast.error(error?.message || t('toast.attendanceDeleteFailed') || 'Failed to delete attendance');
+      showToast.error(
+        error?.message || t('toast.attendanceDeleteFailed') || 'Failed to delete attendance',
+      );
     },
   });
 };

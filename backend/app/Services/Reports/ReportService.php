@@ -643,11 +643,11 @@ class ReportService
 
         if ($templateName === 'student-report-card' || $config->reportKey === 'student_report_card') {
             $layout['font_family'] = 'Bahij Nassim';
-            $layout['font_size'] = $layout['font_size'] ?? '10px';
+            $layout['font_size'] = '14px';
             $layout['rtl'] = StudentExamReportCardLabels::isRtl((string) $config->language);
             $layout['orientation'] = 'portrait';
             $layout['page_size'] = 'A5';
-            $layout['margins'] = '8mm 8mm 10mm 8mm';
+            $layout['margins'] = '3mm 3mm 3mm 3mm';
             $layout['logo_height_px'] = $layout['logo_height_px'] ?? 56;
             $layout['show_page_numbers'] = $layout['show_page_numbers'] ?? false;
             $layout['show_generation_date'] = $layout['show_generation_date'] ?? true;
@@ -655,13 +655,13 @@ class ReportService
 
         if ($templateName === 'combined-student-report-card' || $config->reportKey === 'combined_student_report_card') {
             $layout['font_family'] = 'Bahij Nassim';
-            $layout['font_size'] = '9px';
+            $layout['font_size'] = '14px';
             $layout['rtl'] = StudentExamReportCardLabels::isRtl((string) $config->language);
-            $layout['orientation'] = 'landscape';
-            $layout['page_size'] = 'A4';
-            $layout['margins'] = '8mm 8mm 16mm 8mm';
-            $layout['logo_height_px'] = $layout['logo_height_px'] ?? 48;
-            $layout['show_page_numbers'] = true;
+            $layout['orientation'] = 'portrait';
+            $layout['page_size'] = 'A5';
+            $layout['margins'] = '3mm 3mm 3mm 3mm';
+            $layout['logo_height_px'] = $layout['logo_height_px'] ?? 42;
+            $layout['show_page_numbers'] = false;
             $layout['show_generation_date'] = true;
         }
 

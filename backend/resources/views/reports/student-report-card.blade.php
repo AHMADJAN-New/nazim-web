@@ -7,19 +7,26 @@
     $cards = $cards ?? [];
     $dash = '—';
     $primary = $PRIMARY_COLOR ?? '#0b0b56';
-    $secondary = $SECONDARY_COLOR ?? '#0056b3';
     $accent = $ACCENT_COLOR ?? '#c9a227';
-    $logoMax = ($logo_height_px ?? 56).'px';
+    $logoMax = ($logo_height_px ?? 48).'px';
+    $fmt = function ($value) use ($dash) {
+        if ($value === null || $value === '') {
+            return $dash;
+        }
+        $number = (float) $value;
+        if (abs($number - round($number)) < 0.001) {
+            return (string) (int) round($number);
+        }
+        return rtrim(rtrim(number_format($number, 1, '.', ''), '0'), '.');
+    };
 @endphp
 
 @if(!empty($WATERMARK))
     <div class="watermark">
         @if(($WATERMARK['wm_type'] ?? null) === 'image' && !empty($WATERMARK['image_data_uri']))
-            <img src="{{ $WATERMARK['image_data_uri'] }}" alt="Watermark" class="watermark-image">
+            <img src="{{ $WATERMARK['image_data_uri'] }}" alt="" class="watermark-image">
         @elseif(!empty($WATERMARK['text']))
             <span class="watermark-text">{{ $WATERMARK['text'] }}</span>
-        @elseif(!empty($WATERMARK['image_url']))
-            <img src="{{ $WATERMARK['image_url'] }}" class="watermark-image" alt="Watermark">
         @endif
     </div>
 @endif
@@ -28,7 +35,7 @@
 @php
     $student = $card['student'] ?? [];
     $exam = $card['exam'] ?? [];
-    $subjects = $card['subjects'] ?? [];
+    $subjects = array_values($card['subjects'] ?? []);
     $summary = $card['summary'] ?? [];
     $overallResult = $summary['overall_result'] ?? null;
     $resultKey = strtolower((string) $overallResult);
@@ -37,458 +44,220 @@
     }
     $resultLabel = $L($resultKey, $overallResult ?: $dash);
     $classLabel = trim(($student['class'] ?? '').(!empty($student['section']) ? ' — '.$student['section'] : ''));
+    $schoolTitle = $SCHOOL_NAME_PASHTO ?? $SCHOOL_NAME ?? '';
+    $half = (int) ceil(max(count($subjects), 1) / 2);
+    $leftSubjects = array_slice($subjects, 0, $half);
+    $rightSubjects = array_slice($subjects, $half);
+    $rowCount = max(count($leftSubjects), count($rightSubjects));
+    $passingValues = [];
+    $fullValues = [];
+    foreach ($subjects as $subject) {
+        $marks = $subject['marks'] ?? [];
+        if (($marks['passing'] ?? null) !== null && $marks['passing'] !== '') {
+            $passingValues[] = (float) $marks['passing'];
+        }
+        if (($marks['total'] ?? null) !== null && $marks['total'] !== '') {
+            $fullValues[] = (float) $marks['total'];
+        }
+    }
+    $passingUniform = $passingValues !== [] && count(array_unique($passingValues)) === 1;
+    $fullUniform = $fullValues !== [] && count(array_unique($fullValues)) === 1;
+    $minimumValue = $passingUniform ? $passingValues[0] : ($passingValues === [] ? null : array_sum($passingValues));
+    $minimumLabel = $passingUniform ? $L('minimumMarks', 'Minimum marks') : $L('passingTotal', 'Passing total');
+    $maximumValue = $fullUniform ? $fullValues[0] : ($summary['total_maximum_marks'] ?? null);
+    $attestKey = $resultKey === 'pass' ? 'attestation' : ($resultKey === 'fail' ? 'attestationFail' : 'attestationIncomplete');
+    $attestHtml = e($L($attestKey, $L('attestation', '')));
+    foreach ([
+        'school' => $schoolTitle !== '' ? $schoolTitle : $dash,
+        'student' => $student['full_name'] ?? $dash,
+        'father' => $student['father_name'] ?? $dash,
+        'exam' => $exam['name'] ?? $dash,
+        'grade' => $summary['overall_grade'] ?? $dash,
+    ] as $token => $value) {
+        $safe = e((string) $value);
+        if ($token === 'student' || $token === 'father') {
+            $safe = '<strong>'.$safe.'</strong>';
+        }
+        $attestHtml = str_replace('{'.$token.'}', $safe, $attestHtml);
+    }
+    $markBits = function (?array $subject) use ($L, $dash, $fmt) {
+        if ($subject === null) {
+            return ['main' => '', 'meta' => '', 'tone' => ''];
+        }
+        $marks = $subject['marks'] ?? [];
+        $pass = $subject['is_pass'] ?? null;
+        $tone = $pass === true ? 'pass' : ($pass === false ? 'fail' : '');
+        if (!empty($subject['is_absent'])) {
+            return ['main' => $L('absent', 'Absent'), 'meta' => '', 'tone' => 'fail'];
+        }
+        if (($marks['obtained'] ?? null) === null) {
+            return ['main' => $dash, 'meta' => '', 'tone' => ''];
+        }
+        $total = $marks['total'] ?? null;
+        $metaParts = [];
+        if (($marks['percentage'] ?? null) !== null) {
+            $metaParts[] = $fmt($marks['percentage']).'%';
+        }
+        if (!empty($subject['grade_name'])) {
+            $metaParts[] = $subject['grade_name'];
+        }
+        return [
+            'main' => $fmt($marks['obtained']).($total !== null ? ' / '.$fmt($total) : ''),
+            'meta' => implode(' · ', $metaParts),
+            'tone' => $tone,
+        ];
+    };
 @endphp
-
-<div class="src-page @if(!$loop->last) src-page-break @endif">
-    {{-- Standard branded header (same pattern as other reports) --}}
-    <div class="report-header">
-        <div class="header-left">
-            @php
-                $leftLogos = [];
-                if (($show_primary_logo ?? true) && !empty($PRIMARY_LOGO_URI) && ($primary_logo_position ?? 'left') === 'left') {
-                    $leftLogos[] = ['uri' => $PRIMARY_LOGO_URI, 'alt' => 'Primary Logo'];
-                }
-                if (($show_secondary_logo ?? false) && !empty($SECONDARY_LOGO_URI) && ($secondary_logo_position ?? 'right') === 'left') {
-                    $leftLogos[] = ['uri' => $SECONDARY_LOGO_URI, 'alt' => 'Secondary Logo'];
-                }
-                if (($show_ministry_logo ?? false) && !empty($MINISTRY_LOGO_URI) && ($ministry_logo_position ?? 'right') === 'left') {
-                    $leftLogos[] = ['uri' => $MINISTRY_LOGO_URI, 'alt' => 'Ministry Logo'];
-                }
-                // Fallbacks used by some custom templates
-                if (empty($leftLogos) && !empty($PRIMARY_LOGO)) {
-                    $leftLogos[] = ['uri' => $PRIMARY_LOGO, 'alt' => 'Primary Logo'];
-                }
-            @endphp
-            @foreach($leftLogos as $logo)
-                <img src="{!! $logo['uri'] !!}" alt="{{ $logo['alt'] }}" class="header-logo" style="max-height: {{ $logoMax }};">
-            @endforeach
-        </div>
-
-        <div class="header-center">
-            @if(!empty($header_text) && ($header_text_position ?? 'below_school_name') === 'above_school_name')
-                <div class="header-text">{{ $header_text }}</div>
-            @endif
-
-            @if(!empty($SCHOOL_NAME_PASHTO))
-                <div class="school-name">{{ $SCHOOL_NAME_PASHTO }}</div>
-            @elseif(!empty($SCHOOL_NAME))
-                <div class="school-name">{{ $SCHOOL_NAME }}</div>
-            @endif
-
-            @if(!empty($header_text) && ($header_text_position ?? 'below_school_name') === 'below_school_name')
-                <div class="header-text">{{ $header_text }}</div>
-            @endif
-
-            <div class="report-title">{{ $TABLE_TITLE ?? $L('reportTitle', 'Student Report Card') }}</div>
-
-            @if(!empty($exam['name']) || !empty($exam['academic_year']))
-                <div class="header-text src-exam-line">
+<div class="kashf-page @if(!$loop->last) kashf-break @endif">
+    <div class="kashf-frame">
+        <header class="kashf-head">
+            <div class="kashf-logos">
+                @if(!empty($PRIMARY_LOGO_URI))
+                    <img src="{!! $PRIMARY_LOGO_URI !!}" alt="" style="max-height: {{ $logoMax }};">
+                @endif
+            </div>
+            <div class="kashf-head-text">
+                @if($schoolTitle !== '')
+                    <div class="kashf-school">{{ $schoolTitle }}</div>
+                @endif
+                <div class="kashf-title">{{ $L('kashfTitle', 'Kashf al-Darajat') }}</div>
+                <div class="kashf-exam">
                     {{ $exam['name'] ?? '' }}
                     @if(!empty($exam['name']) && !empty($exam['academic_year'])) — @endif
                     {{ $exam['academic_year'] ?? '' }}
                 </div>
-            @endif
-
-            @if(!empty($header_html))
-                <div class="custom-header">{!! $header_html !!}</div>
-            @endif
-        </div>
-
-        <div class="header-right">
-            @php
-                $rightLogos = [];
-                if (($show_primary_logo ?? true) && !empty($PRIMARY_LOGO_URI) && ($primary_logo_position ?? 'left') === 'right') {
-                    $rightLogos[] = ['uri' => $PRIMARY_LOGO_URI, 'alt' => 'Primary Logo'];
-                }
-                if (($show_secondary_logo ?? false) && !empty($SECONDARY_LOGO_URI) && ($secondary_logo_position ?? 'right') === 'right') {
-                    $rightLogos[] = ['uri' => $SECONDARY_LOGO_URI, 'alt' => 'Secondary Logo'];
-                }
-                if (($show_ministry_logo ?? false) && !empty($MINISTRY_LOGO_URI) && ($ministry_logo_position ?? 'right') === 'right') {
-                    $rightLogos[] = ['uri' => $MINISTRY_LOGO_URI, 'alt' => 'Ministry Logo'];
-                }
-                if (empty($rightLogos) && !empty($SECONDARY_LOGO)) {
-                    $rightLogos[] = ['uri' => $SECONDARY_LOGO, 'alt' => 'Secondary Logo'];
-                }
-            @endphp
-            @foreach($rightLogos as $logo)
-                <img src="{!! $logo['uri'] !!}" alt="{{ $logo['alt'] }}" class="header-logo" style="max-height: {{ $logoMax }};">
-            @endforeach
-        </div>
-    </div>
-
-    @if(!empty($NOTES_HEADER))
-        <div class="notes-section header-notes">
-            @foreach($NOTES_HEADER as $note)
-                <div class="note-item">{{ $note['note_text'] ?? '' }}</div>
-            @endforeach
-        </div>
-    @endif
-
-    <div class="src-body">
-        <section class="src-identity">
-            <div class="src-photo-wrap">
+            </div>
+            <div class="kashf-logos">
                 @if(!empty($student['picture_data_url']))
-                    <img src="{{ $student['picture_data_url'] }}" alt="" class="src-photo">
-                @else
-                    <div class="src-photo src-photo-fallback">{{ mb_substr($student['full_name'] ?? 'S', 0, 1) }}</div>
+                    <img src="{{ $student['picture_data_url'] }}" alt="" class="kashf-photo">
+                @elseif(!empty($SECONDARY_LOGO_URI))
+                    <img src="{!! $SECONDARY_LOGO_URI !!}" alt="" style="max-height: {{ $logoMax }};">
                 @endif
-                <div class="src-photo-caption">{{ $L('studentPhoto', 'Student Photo') }}</div>
             </div>
-            <div class="src-facts">
-                <div class="src-fact">
-                    <span>{{ $L('fullName', 'Full Name') }}</span>
-                    <strong>{{ $student['full_name'] ?? $dash }}</strong>
-                </div>
-                <div class="src-fact">
-                    <span>{{ $L('fatherName', 'Father Name') }}</span>
-                    <strong>{{ $student['father_name'] ?? $dash }}</strong>
-                </div>
-                <div class="src-fact">
-                    <span>{{ $L('class', 'Class') }}</span>
-                    <strong>{{ $classLabel !== '' ? $classLabel : $dash }}</strong>
-                </div>
-                <div class="src-fact">
-                    <span>{{ $L('rollNumber', 'Roll Number') }}</span>
-                    <strong>{{ $student['roll_number'] ?? $dash }}</strong>
-                </div>
-                <div class="src-fact">
-                    <span>{{ $L('admissionNo', 'Admission No') }}</span>
-                    <strong>{{ $student['admission_no'] ?? $dash }}</strong>
-                </div>
-                <div class="src-fact">
-                    <span>{{ $L('dateOfBirth', 'Date of Birth') }}</span>
-                    <strong>{{ $student['birth_date_formatted'] ?? ($student['birth_date'] ?? $dash) }}</strong>
-                </div>
-            </div>
-        </section>
+        </header>
 
-        <table class="data-table src-marks">
+        <div class="kashf-identity">
+            <div><span>{{ $L('fullName', 'Full Name') }}</span><strong>{{ $student['full_name'] ?? $dash }}</strong></div>
+            <div><span>{{ $L('fatherName', 'Father Name') }}</span><strong>{{ $student['father_name'] ?? $dash }}</strong></div>
+            <div><span>{{ $L('rollNumber', 'Roll Number') }}</span><strong class="num">{{ $student['roll_number'] ?? $dash }}</strong></div>
+            <div><span>{{ $L('class', 'Class') }}</span><strong>{{ $classLabel !== '' ? $classLabel : $dash }}</strong></div>
+            <div><span>{{ $L('admissionNo', 'Admission No') }}</span><strong class="num">{{ $student['admission_no'] ?? $dash }}</strong></div>
+            <div><span>{{ $L('dateOfBirth', 'Date of Birth') }}</span><strong>{{ $student['birth_date_formatted'] ?? ($student['birth_date'] ?? $dash) }}</strong></div>
+        </div>
+
+        <table class="kashf-table">
             <thead>
                 <tr>
-                    <th style="width: 8%;">#</th>
                     <th>{{ $L('subjectName', 'Subject') }}</th>
-                    <th style="width: 14%;">{{ $L('maxMarks', 'Max Marks') }}</th>
-                    <th style="width: 14%;">{{ $L('marksObtained', 'Marks Obtained') }}</th>
-                    <th style="width: 12%;">{{ $L('percentage', 'Percentage') }}</th>
-                    <th style="width: 12%;">{{ $L('grade', 'Grade') }}</th>
+                    <th class="num">{{ $L('marks', 'Marks') }}</th>
+                    <th>{{ $L('subjectName', 'Subject') }}</th>
+                    <th class="num">{{ $L('marks', 'Marks') }}</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($subjects as $i => $subject)
-                @php
-                    $isAbsent = !empty($subject['is_absent']);
-                    $marks = $subject['marks'] ?? [];
-                    $subjectPass = $subject['is_pass'] ?? null;
-                @endphp
-                <tr>
-                    <td class="text-center">{{ $i + 1 }}</td>
-                    <td>{{ $subject['subject']['name'] ?? ($subject['name'] ?? $dash) }}</td>
-                    <td class="text-center">{{ $marks['total'] ?? $dash }}</td>
-                    <td class="text-center @if($subjectPass === true) src-pass @elseif($subjectPass === false) src-fail @endif">
-                        @if($isAbsent)
-                            {{ $L('absent', 'Absent') }}
-                        @else
-                            {{ $marks['obtained'] ?? $dash }}
-                        @endif
-                    </td>
-                    <td class="text-center">
-                        @if($isAbsent || !isset($marks['percentage']) || $marks['percentage'] === null)
-                            {{ $dash }}
-                        @else
-                            {{ number_format((float) $marks['percentage'], 1) }}%
-                        @endif
-                    </td>
-                    <td class="text-center">{{ $subject['grade_name'] ?? $dash }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-            <tfoot>
-                <tr class="totals-row">
-                    <td colspan="2"><strong>{{ $L('grandTotal', 'Grand Total') }}</strong></td>
-                    <td class="text-center"><strong>{{ $summary['total_maximum_marks'] ?? $dash }}</strong></td>
-                    <td class="text-center"><strong>{{ $summary['total_marks_obtained'] ?? $dash }}</strong></td>
-                    <td class="text-center">
-                        <strong>
-                            @if(isset($summary['overall_percentage']))
-                                {{ number_format((float) $summary['overall_percentage'], 1) }}%
-                            @else
-                                {{ $dash }}
+                @for($i = 0; $i < $rowCount; $i++)
+                    @php
+                        $left = $markBits($leftSubjects[$i] ?? null);
+                        $right = $markBits($rightSubjects[$i] ?? null);
+                        $leftName = $leftSubjects[$i]['subject']['name'] ?? ($leftSubjects[$i]['name'] ?? '');
+                        $rightName = $rightSubjects[$i]['subject']['name'] ?? ($rightSubjects[$i]['name'] ?? '');
+                    @endphp
+                    <tr>
+                        <td>{{ $leftName !== '' ? $leftName : ($rowCount > 0 ? $dash : '') }}</td>
+                        <td class="num kashf-{{ $left['tone'] }}">
+                            <div>{{ $left['main'] !== '' ? $left['main'] : $dash }}</div>
+                            @if($left['meta'] !== '')<div class="kashf-meta">{{ $left['meta'] }}</div>@endif
+                        </td>
+                        <td>{{ $rightName }}</td>
+                        <td class="num kashf-{{ $right['tone'] }}">
+                            @if($right['main'] !== '')
+                                <div>{{ $right['main'] }}</div>
+                                @if($right['meta'] !== '')<div class="kashf-meta">{{ $right['meta'] }}</div>@endif
                             @endif
-                        </strong>
-                    </td>
-                    <td class="text-center"><strong>{{ $summary['overall_grade'] ?? $dash }}</strong></td>
-                </tr>
-            </tfoot>
+                        </td>
+                    </tr>
+                @endfor
+            </tbody>
         </table>
 
-        <section class="src-result-bar src-result-{{ $resultKey }}">
-            <div class="src-stat">
-                <span>{{ $L('overallPercentage', 'Overall Percentage') }}</span>
-                <strong>
-                    @if(isset($summary['overall_percentage']))
-                        {{ number_format((float) $summary['overall_percentage'], 1) }}%
-                    @else
-                        {{ $dash }}
-                    @endif
-                </strong>
-            </div>
-            <div class="src-stat">
-                <span>{{ $L('overallGrade', 'Overall Grade') }}</span>
-                <strong>{{ $summary['overall_grade'] ?? $dash }}</strong>
-            </div>
-            <div class="src-stat src-verdict">
-                <span>{{ $L('overallResult', 'Overall Result') }}</span>
-                <strong>{{ $resultLabel }}</strong>
-            </div>
+        <div class="kashf-totals">
+            <div><span>{{ $minimumLabel }}</span><strong class="num">{{ $fmt($minimumValue) }}</strong></div>
+            <div><span>{{ $L('maximumMarks', 'Full marks') }}</span><strong class="num">{{ $fmt($maximumValue) }}</strong></div>
+            <div><span>{{ $L('obtainedMarks', 'Marks obtained') }}</span><strong class="num">{{ $fmt($summary['total_marks_obtained'] ?? null) }}</strong></div>
+            <div><span>{{ $L('totalMarks', 'Total marks') }}</span><strong class="num">{{ $fmt($summary['total_maximum_marks'] ?? null) }}</strong></div>
+            <div><span>{{ $L('overallPercentage', 'Overall Percentage') }}</span><strong class="num">{{ isset($summary['overall_percentage']) ? $fmt($summary['overall_percentage']).'%' : $dash }}</strong></div>
+            <div><span>{{ $L('overallGrade', 'Overall Grade') }}</span><strong>{{ $summary['overall_grade'] ?? $dash }}</strong></div>
             @if(isset($summary['marks_cut']))
-                <div class="src-stat src-penalty">
-                    <span>{{ $L('absenceCount', 'Absences') }}: {{ $summary['absence_count'] ?? 0 }}</span>
-                    <strong>{{ $L('marksCut', 'Marks Cut') }}: {{ $summary['marks_cut'] }}</strong>
-                </div>
+                <div><span>{{ $L('absenceCount', 'Absences') }}</span><strong class="num">{{ $summary['absence_count'] ?? 0 }}</strong></div>
+                <div><span>{{ $L('marksCut', 'Marks Cut') }}</span><strong class="num">{{ $fmt($summary['marks_cut']) }}</strong></div>
             @endif
-        </section>
+            <div class="kashf-verdict kashf-{{ $resultKey }}"><span>{{ $L('overallResult', 'Overall Result') }}</span><strong>{{ $resultLabel }}</strong></div>
+        </div>
 
-        @if(!empty($NOTES_BODY))
-            <div class="notes-section body-notes">
-                @foreach($NOTES_BODY as $note)
-                    <div class="note-item">{{ $note['note_text'] ?? '' }}</div>
-                @endforeach
-            </div>
-        @endif
+        <p class="kashf-attest">{!! $attestHtml !!}</p>
+        <p class="kashf-conduct">{{ $L('attestationConduct') }}</p>
 
-        <section class="src-signatures">
-            <div class="src-sig"><i></i>{{ $L('classTeacher', 'Class Teacher') }}</div>
-            <div class="src-sig"><i></i>{{ $L('principal', 'Principal') }}</div>
-            <div class="src-sig"><i></i>{{ $L('parent', 'Parent / Guardian') }}</div>
-        </section>
-    </div>
+        <div class="kashf-signs">
+            <div><i></i>{{ $L('principal', 'Principal') }}</div>
+            <div><i></i>{{ $L('schoolSeal', 'School seal') }}</div>
+        </div>
 
-    {{-- Standard branded footer --}}
-    <div class="report-footer">
-        @if(!empty($footer_text))
-            <div class="footer-text">{{ $footer_text }}</div>
-        @endif
-
-        <div class="footer-row">
-            <div class="footer-left">
-                @if(!empty($SCHOOL_PHONE))
-                    {{ $SCHOOL_PHONE }}
-                @endif
-                @if(!empty($SCHOOL_EMAIL))
-                    @if(!empty($SCHOOL_PHONE)) · @endif
-                    {{ $SCHOOL_EMAIL }}
-                @endif
-            </div>
-            <div class="footer-center">
-                @if(!empty($SCHOOL_WEBSITE))
-                    {{ $SCHOOL_WEBSITE }}
-                @endif
-            </div>
-            <div class="footer-right">
+        <footer class="kashf-foot">
+            <span>{{ $SCHOOL_ADDRESS ?? '' }}</span>
+            <span>
                 @if($show_generation_date ?? true)
-                    {{ $L('dateIssued', 'Date Issued') }}: {{ $CURRENT_DATE ?? ($CURRENT_DATETIME ?? now()->format('Y-m-d')) }}
+                    {{ $L('dateIssued', 'Date Issued') }}: {{ $CURRENT_DATE ?? ($CURRENT_DATETIME ?? '') }}
                 @endif
-            </div>
-        </div>
-
-        @if(!empty($SCHOOL_ADDRESS))
-            <div class="footer-row">
-                <div class="footer-left"></div>
-                <div class="footer-center">{{ $SCHOOL_ADDRESS }}</div>
-                <div class="footer-right"></div>
-            </div>
-        @endif
-
-        @if(!empty($footer_html))
-            <div class="custom-footer">{!! $footer_html !!}</div>
-        @endif
-
-        @if(!empty($NOTES_FOOTER))
-            <div class="notes-section footer-notes">
-                @foreach($NOTES_FOOTER as $note)
-                    <div class="note-item">{{ $note['note_text'] ?? '' }}</div>
-                @endforeach
-            </div>
-        @endif
-
-        <div class="system-note">
-            دا راپور د ناظم سیستم په مټ جوړ شوی دی.
-        </div>
+            </span>
+        </footer>
     </div>
 </div>
 @empty
-<div class="src-empty">{{ $L('reportTitle', 'Student Report Card') }}</div>
+<p>{{ $dash }}</p>
 @endforelse
 
 <style>
-    .src-page {
-        min-height: calc(210mm - 18mm);
+    html, body { height: 100%; }
+    .kashf-page { min-height: 100%; }
+    .kashf-break { page-break-after: always; break-after: page; }
+    .kashf-frame {
+        box-sizing: border-box;
+        min-height: 100%;
         display: flex;
         flex-direction: column;
-    }
-    .src-page-break {
-        page-break-after: always;
-        break-after: page;
-    }
-    .src-page .report-header {
-        margin-bottom: 8px;
-        padding-bottom: 8px;
-        border-bottom-width: 2.5px;
-        border-bottom-color: {{ $primary }};
-    }
-    .src-page .school-name {
-        font-size: 15px;
-        line-height: 1.3;
-    }
-    .src-page .report-title {
-        font-size: 12px;
-        margin-top: 2px;
-        color: {{ $secondary }};
-    }
-    .src-exam-line {
-        margin-top: 2px;
-        font-size: 10px;
-    }
-    .src-body {
-        flex: 1 1 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-    .src-identity {
-        display: flex;
-        gap: 12px;
-        align-items: stretch;
-        padding: 8px 10px;
-        border: 1px solid {{ $primary }}33;
-        border-radius: 8px;
-        background: linear-gradient(180deg, {{ $primary }}0F 0%, #ffffff 70%);
-    }
-    .src-photo-wrap {
-        width: 72px;
-        flex-shrink: 0;
-        text-align: center;
-    }
-    .src-photo {
-        width: 68px;
-        height: 84px;
-        object-fit: cover;
-        border-radius: 6px;
-        border: 2px solid {{ $accent }};
-        background: #f4f1e8;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 22px;
-        font-weight: 800;
-        color: {{ $primary }};
-        margin: 0 auto;
-    }
-    .src-photo-caption {
-        font-size: 8px;
-        color: #666;
-        margin-top: 3px;
-    }
-    .src-facts {
-        flex: 1;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 6px 12px;
-        align-content: center;
-    }
-    .src-fact span {
-        display: block;
-        font-size: 8.5px;
-        color: {{ $secondary }};
-        font-weight: 700;
-    }
-    .src-fact strong {
-        display: block;
-        font-size: 11px;
-        color: #1c2430;
-        line-height: 1.25;
-    }
-    .src-marks {
-        width: 100%;
-        margin: 0;
-        font-size: 10px;
-    }
-    .src-marks th {
-        background-color: {{ $primary }} !important;
-        padding: 6px 4px !important;
-        font-size: 9.5px !important;
-    }
-    .src-marks td {
-        padding: 5px 4px !important;
-        font-size: 10px !important;
-    }
-    .src-marks tbody tr:nth-child(even) td {
-        background: {{ $primary }}0A;
-    }
-    .src-pass { color: #0f7a45; font-weight: 700; }
-    .src-fail { color: #b42318; font-weight: 700; }
-    .text-center { text-align: center; }
-    .src-result-bar {
-        display: flex;
-        border: 1.5px solid {{ $primary }}40;
-        border-radius: 8px;
-        overflow: hidden;
-        margin-top: 2px;
-    }
-    .src-stat {
-        flex: 1;
-        padding: 8px 6px;
-        text-align: center;
-        background: #f8fafc;
-    }
-    .src-stat + .src-stat {
-        border-inline-start: 1px solid {{ $primary }}22;
-    }
-    .src-stat span {
-        display: block;
-        font-size: 8.5px;
-        color: #5c6570;
-        font-weight: 700;
-        margin-bottom: 2px;
-    }
-    .src-stat strong {
-        display: block;
+        border: 2.5px solid {{ $primary }};
+        box-shadow: inset 0 0 0 1px {{ $accent }}, inset 0 0 0 5px #fff, inset 0 0 0 6.5px {{ $accent }};
+        padding: 10px 8px 8px;
         font-size: 14px;
-        color: {{ $primary }};
-        line-height: 1.2;
+        line-height: 1.35;
     }
-    .src-verdict strong { font-size: 15px; }
-    .src-result-pass .src-verdict { background: #e8f7ee; }
-    .src-result-pass .src-verdict strong { color: #0f7a45; }
-    .src-result-fail .src-verdict { background: #fdecec; }
-    .src-result-fail .src-verdict strong { color: #b42318; }
-    .src-result-incomplete .src-verdict { background: #fff6e0; }
-    .src-result-incomplete .src-verdict strong { color: #8a5a00; }
-    .src-penalty strong { font-size: 11px; color: #5c6570; }
-    .src-signatures {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 14px;
-        margin-top: auto;
-        padding-top: 10px;
-        text-align: center;
-        font-size: 10px;
-        font-weight: 700;
-        color: #3d4654;
-    }
-    .src-sig i {
-        display: block;
-        height: 28px;
-        border-bottom: 1.5px solid {{ $primary }};
-        margin-bottom: 4px;
-    }
-    .src-page .report-footer {
-        margin-top: 10px;
-        padding-top: 8px;
-    }
-    .src-empty {
-        padding: 24px;
-        text-align: center;
-    }
+    .kashf-head { display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; gap: 4px; text-align: center; border-bottom: 2px solid {{ $accent }}; padding-bottom: 4px; }
+    .kashf-logos img { max-width: 48px; object-fit: contain; }
+    .kashf-photo { width: 44px; height: 54px; object-fit: cover; border: 1px solid {{ $primary }}; }
+    .kashf-school { font-size: 14px; font-weight: 800; color: {{ $primary }}; line-height: 1.3; }
+    .kashf-title { font-size: 14px; font-weight: 800; margin-top: 2px; }
+    .kashf-exam { font-size: 14px; margin-top: 2px; }
+    .kashf-identity { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3px 6px; margin: 6px 0; font-size: 14px; }
+    .kashf-identity span { display: block; color: #52525b; font-size: 14px; }
+    .kashf-table { width: 100%; border-collapse: collapse; }
+    .kashf-table th, .kashf-table td { border: 1px solid #c4c4cc; padding: 2px 4px; vertical-align: middle; font-size: 14px; }
+    .kashf-table th { background: {{ $primary }}; color: #fff; font-weight: 700; }
+    .kashf-table td:nth-child(2) { border-inline-end-width: 2px; border-inline-end-color: {{ $accent }}; }
+    .num { text-align: center; direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
+    .kashf-meta { font-size: 14px; color: #3f3f46; font-weight: 600; }
+    .kashf-pass { color: #166534; font-weight: 700; }
+    .kashf-fail { color: #b91c1c; font-weight: 700; }
+    .kashf-totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin-top: 6px; }
+    .kashf-totals > div { border: 1px solid #e4e4e7; padding: 2px 3px; text-align: center; background: #fafafa; }
+    .kashf-totals span { display: block; font-size: 14px; color: #52525b; }
+    .kashf-totals strong { display: block; font-size: 14px; color: {{ $primary }}; }
+    .kashf-verdict.kashf-pass { background: #ecfdf3; }
+    .kashf-verdict.kashf-fail { background: #fef2f2; }
+    .kashf-verdict.kashf-incomplete { background: #fffbeb; color: #92400e; }
+    .kashf-attest, .kashf-conduct { margin: 6px 0 0; font-size: 14px; line-height: 1.45; }
+    .kashf-conduct { color: #3f3f46; }
+    .kashf-signs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: auto; padding-top: 2.8em; text-align: center; font-size: 14px; font-weight: 700; }
+    .kashf-signs i { display: block; height: 22mm; border-bottom: 1px solid {{ $primary }}; margin-bottom: 4px; }
+    .kashf-foot { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; padding-top: 3px; border-top: 1px solid #e4e4e7; font-size: 14px; color: #52525b; }
 </style>
 @endsection

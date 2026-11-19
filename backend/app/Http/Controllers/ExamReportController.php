@@ -670,7 +670,7 @@ class ExamReportController extends Controller
             return response()->json(['error' => 'Student not enrolled in this exam'], 404);
         }
 
-        $language = (string) $request->get('language', 'en');
+        $language = (string) $request->get('language', 'ar');
         $calendarPreference = (string) $request->get('calendar_preference', 'jalali');
 
         $card = $this->studentExamReportCardService->buildCard(
@@ -755,7 +755,7 @@ class ExamReportController extends Controller
             ->map(fn (string $id) => $examStudents->firstWhere('id', $id))
             ->filter();
 
-        $language = (string) ($validated['language'] ?? 'ps');
+        $language = (string) ($validated['language'] ?? 'ar');
         $calendarPreference = (string) ($validated['calendar_preference'] ?? 'jalali');
 
         try {

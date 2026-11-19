@@ -56,11 +56,17 @@ class StudentExamReportCardService
             ->whereNull('deleted_at')
             ->get();
 
-        $subjectResults = $examSubjects->map(function ($examSubject) use ($results) {
+        $examClosed = in_array($exam->status, [Exam::STATUS_COMPLETED, Exam::STATUS_ARCHIVED], true);
+
+        $subjectResults = $examSubjects->map(function ($examSubject) use ($results, $examClosed) {
             $result = $results->firstWhere('exam_subject_id', $examSubject->id);
 
             $marks = $result ? $result->marks_obtained : null;
             $isAbsent = $result ? (bool) $result->is_absent : false;
+            if ($examClosed && ($isAbsent || $marks === null)) {
+                $marks = 0;
+                $isAbsent = false;
+            }
             $remarks = $result ? $result->remarks : null;
 
             $isPass = null;
@@ -170,9 +176,9 @@ class StudentExamReportCardService
         );
         $overallResult = GradeCalculator::determineOverallResult($hasIncompleteMarks, $gradeDetails);
         $summary['overall_result'] = $overallResult;
-        $overallGradeName = $gradeDetails['name'] ?? null;
+        $overallGradeName = $overallResult === 'Incomplete' ? null : ($gradeDetails['name'] ?? null);
 
-        $subjectsForPdf = $subjectResults->map(function (array $row) use ($organizationId, $language) {
+        $subjectsForCard = $subjectResults->map(function (array $row) use ($organizationId, $language) {
             $pct = $row['marks']['percentage'] ?? null;
             $gradeName = $row['is_absent']
                 ? null
@@ -210,7 +216,7 @@ class StudentExamReportCardService
                 'picture_path' => $picturePath,
                 'picture_data_url' => $pictureDataUrl,
             ],
-            'subjects' => $embedPicture ? $subjectsForPdf : $subjectResults->values()->all(),
+            'subjects' => $subjectsForCard,
             'summary' => array_merge($summary, [
                 'overall_grade' => $overallGradeName,
             ]),
