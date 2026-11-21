@@ -111,9 +111,9 @@ export default {
     maximumMarks: 'زیاتې نمرې',
     obtainedMarks: 'ترلاسه شوې نمرې',
     totalMarks: 'ټولې نمرې',
-    passingTotal: 'د کامیابۍ ټولټال',
+    passingTotal: 'د کامیابۍ نمرې ',
     marks: 'نمرې',
-    schoolSeal: 'د ښوونځي مهر',
+    schoolSeal: 'د جامعې مهر',
     attestation:
       'د {school} اداره تصدیق کوي چې زده کوونکی {student} د {father} زوی په {exam} کې {result} شوی او درجه یې {grade} ده.',
     attestationConduct:

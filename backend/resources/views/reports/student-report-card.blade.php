@@ -256,8 +256,8 @@
     .kashf-verdict.kashf-incomplete { background: #fffbeb; color: #92400e; }
     .kashf-attest, .kashf-conduct { margin: 6px 0 0; font-size: 14px; line-height: 1.45; }
     .kashf-conduct { color: #3f3f46; }
-    .kashf-signs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: auto; padding-top: 2.8em; text-align: center; font-size: 14px; font-weight: 700; }
-    .kashf-signs i { display: block; height: 22mm; border-bottom: 1px solid {{ $primary }}; margin-bottom: 4px; }
+    .kashf-signs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 6px; text-align: center; font-size: 14px; font-weight: 700; }
+    .kashf-signs i { display: block; height: 16mm; border-bottom: 1px solid {{ $primary }}; margin-bottom: 2px; }
     .kashf-foot { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; padding-top: 3px; border-top: 1px solid #e4e4e7; font-size: 14px; color: #52525b; }
 </style>
 @endsection

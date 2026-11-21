@@ -48,13 +48,16 @@ LAST_COMMIT=""
 # Detect what changed (missing state = first run = rebuild everything)
 REBUILD_PHP=false
 REBUILD_NGINX=false
+RECREATE_APP=false
 if [[ "$FORCE_REBUILD" == "true" ]]; then
   REBUILD_PHP=true
   REBUILD_NGINX=true
+  RECREATE_APP=true
   echo "[update-app] Force rebuild requested; will rebuild both images."
 elif [[ -z "$LAST_COMMIT" ]]; then
   REBUILD_PHP=true
   REBUILD_NGINX=true
+  RECREATE_APP=true
   echo "[update-app] No previous state; will rebuild both images."
 else
   if git -C "${ROOT_DIR}" diff --name-only "${LAST_COMMIT}".."${CURRENT_COMMIT}" -- \
@@ -73,6 +76,12 @@ else
   fi
   [[ "$REBUILD_PHP" != "true" ]] && echo "[update-app] No backend dependency, migration, or PHP image changes; skipping PHP image build."
   [[ "$REBUILD_NGINX" != "true" ]] && echo "[update-app] No frontend or Nginx image changes; skipping Nginx image build."
+  if git -C "${ROOT_DIR}" diff --name-only "${LAST_COMMIT}".."${CURRENT_COMMIT}" -- \
+    docker-compose.prod.yml \
+    docker-compose.yml | grep -q .; then
+    RECREATE_APP=true
+    echo "[update-app] Compose file changed; php, queue, and scheduler will be recreated so new mounts apply."
+  fi
 fi
 
 # Frontend: no host npm step — image builds deps and app in Docker (faster, uses layer cache)
@@ -124,10 +133,20 @@ compose exec -T php sh -c '
 
 # CRITICAL: `compose up -d` often does NOT recreate running containers when only git/code changed.
 # Long-running queue workers keep old PHP/opcache; PDF reports (Browsershot) run in queue.
-# PHP-FPM can also serve stale code. Restart so report generation + download use the same
-# filesystem config (local disk = storage/app/private) and avoid "Report file not found".
-echo "[update-app] Restarting php, queue, and scheduler to reload code, config, and storage layout..."
-compose restart php queue scheduler 2>/dev/null || compose up -d php queue scheduler
+# Report Blade files are bind-mounted, but Laravel keeps compiled copies in storage.
+# Clear those copies, then restart the queue so the pulled templates are what get printed.
+echo "[update-app] Reloading php, queue, and scheduler..."
+if [[ "$RECREATE_APP" == "true" ]]; then
+  compose up -d --force-recreate php queue scheduler
+else
+  compose restart php queue scheduler 2>/dev/null || compose up -d php queue scheduler
+fi
+
+echo "[update-app] Clearing compiled Blade views..."
+compose exec -T php php artisan view:clear
+
+echo "[update-app] Restarting queue so it loads the cleared templates..."
+compose restart queue
 
 if [[ "$SYNC_PERMISSIONS" == "true" ]]; then
   echo "[update-app] Syncing default role permissions..."
